@@ -69,7 +69,7 @@ func loadGolden(t *testing.T) []*goldenCase {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var cases []*goldenCase
 	var c *goldenCase
 	sc := bufio.NewScanner(f)
@@ -253,10 +253,16 @@ func TestGolden(t *testing.T) {
 					}
 				}
 				e.Done()
-				got := []int64{int64(e.Error), int64(e.Offs), int64(e.EndOffs), int64(e.Storage),
-					int64(e.Rng), int64(e.Val), int64(e.Tell()), int64(e.TellFrac())}
+				got := []int64{
+					int64(e.Error), int64(e.Offs), int64(e.EndOffs), int64(e.Storage),
+					int64(e.Rng), int64(e.Val), int64(e.Tell()), int64(e.TellFrac()),
+				}
 				if fmt.Sprint(got) != fmt.Sprint(c.enc) {
-					t.Fatalf("after Done (error offs end_offs storage rng val tell frac) = %v, want %v", got, c.enc)
+					t.Fatalf(
+						"after Done (error offs end_offs storage rng val tell frac) = %v, want %v",
+						got,
+						c.enc,
+					)
 				}
 				if e.RangeBytes() != e.Offs {
 					t.Fatalf("RangeBytes = %d, want %d", e.RangeBytes(), e.Offs)

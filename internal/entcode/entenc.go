@@ -34,27 +34,22 @@ func (e *Encoder) writeByteAtEnd(value uint32) int {
 // are buffered until it can be determined whether or not an actual carry
 // will occur.
 func (e *Encoder) carryOut(c int) {
-	if c != symMax {
-		// No further carry propagation possible, flush buffer.
-		carry := c >> SymBits
-		// Do not output a byte on the first write.
-		if e.Rem >= 0 {
-			e.Error |= e.writeByte(uint32(e.Rem + carry))
-		}
-		if e.Ext > 0 {
-			sym := uint32(symMax+carry) & symMax
-			for {
-				e.Error |= e.writeByte(sym)
-				e.Ext--
-				if e.Ext == 0 {
-					break
-				}
-			}
-		}
-		e.Rem = c & symMax
-	} else {
+	if c == symMax {
 		e.Ext++
+		return
 	}
+	// No further carry propagation possible, flush buffer.
+	carry := c >> SymBits
+	// Do not output a byte on the first write.
+	if e.Rem >= 0 {
+		e.Error |= e.writeByte(uint32(e.Rem + carry))
+	}
+	sym := uint32(symMax+carry) & symMax
+	for e.Ext > 0 {
+		e.Error |= e.writeByte(sym)
+		e.Ext--
+	}
+	e.Rem = c & symMax
 }
 
 // normalize ports ec_enc_normalize.
@@ -226,6 +221,9 @@ func (e *Encoder) Shrink(size uint32) {
 // number of bits that ensures that the symbols encoded so far decode
 // correctly regardless of the bits that follow, flushes the raw bits,
 // and clears the unused space between them.
+// preserve reference entropy intervals, tail clipping and finalization order
+//
+//revive:disable-next-line:cognitive-complexity
 func (e *Encoder) Done() {
 	l := CodeBits - Ilog(e.Rng)
 	msk := (codeTop - 1) >> uint(l)

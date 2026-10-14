@@ -27,6 +27,9 @@ func laplaceGetFreq1(fs0 uint32, decay int) uint32 {
 // a value of +/-1, multiplied by 16384. It returns the value actually
 // coded, which can be smaller in magnitude than value when value is out
 // of range. The C version returns it through the value pointer.
+// preserve reference entropy intervals, tail clipping and finalization order
+//
+//revive:disable-next-line:cognitive-complexity
 func (e *Encoder) LaplaceEncode(value int, fs uint32, decay int) int {
 	var fl uint32
 	val := value
