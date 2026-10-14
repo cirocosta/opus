@@ -1,0 +1,37 @@
+trial,candidate,ratio_to_control,decision
+1,01-corr-w8-u1,1.948867,discard; schedule sweep
+2,02-corr-w8-u2,1.809191,discard; schedule sweep
+3,03-corr-w8-u4,1.706965,discard; schedule sweep
+4,04-corr-w16-u1,1.048164,discard; schedule sweep
+5,05-corr-w16-u2,0.981869,discard; schedule sweep
+6,06-corr-w16-u4,1.001818,discard; schedule sweep
+7,07-corr-w32-u1,0.623499,discard; schedule sweep
+8,08-corr-w32-u2,0.611470,discard; schedule sweep
+9,09-corr-w32-u4,0.609876,discard; schedule sweep
+10,10-corr-w64-u1,0.604519,"keep; best schedule, confirmed in full codec matrix"
+11,11-corr-w64-u2,0.624080,discard; schedule sweep
+12,12-corr-w64-u4,0.613303,discard; schedule sweep
+13,13-dense-w16-u1,0.813311,discard; schedule sweep
+14,14-dense-w16-u2,0.796175,discard; schedule sweep
+15,15-dense-w16-u4,0.788064,discard; schedule sweep
+16,16-dense-w24-u1,0.778963,discard; schedule sweep
+17,17-dense-w24-u2,0.740813,discard; schedule sweep
+18,18-dense-w24-u4,0.734668,"keep; best schedule, confirmed in full codec matrix"
+19,19-dense-w32-u1,0.849829,discard; schedule sweep
+20,20-dense-w32-u2,0.779765,discard; schedule sweep
+21,21-dense-w32-u4,0.788235,discard; schedule sweep
+22,mdct-back-fusion,1.001188,revert; no reliable gain or case regression
+23,nsq-live-copy,0.967853,"keep; exact live-state copy reduction, confirmed in full codec matrix"
+24,nsq-live-init,1.001082,revert; no reliable gain or case regression
+25,nlsf-level-cache,0.998233,revert; no reliable gain or case regression
+26,mdct-forward-fusion,1.002070,revert; no reliable gain or case regression
+27,pvq-sum-fusion,0.932525,revert; no reliable gain or case regression
+28,avx2-integer-prediction,0.999950,revert; no end-to-end gain
+29,sse2-fused-resampler,0.922843,"keep; exact fused resampler, confirmed in full codec matrix"
+30,warp-unroll24,0.986577,revert; no reliable gain or case regression
+31,fft-static5,1.085125,revert; no reliable gain or case regression
+32,cwrs-hybrid4,1.006749,revert; no reliable gain or case regression
+33,rotation-register-carry,0.993697,"keep; CELT stereo decoder -1.55%, p=0.033, n=12; no observed per-case regression"
+34,avx2-fft5-four-butterflies,0.967625,"keep; six paired500ms runs, exact FFT/MDCT/codec goldens and aligned/unaligned differential cases"
+35,avx2-icdf-eight-threshold-scan,1.055498,"revert; four alternating paired runs, SILK and hybrid decode regressions, geomean +5.55%"
+36,sse2-warped-autocorrelation-pairs,1.041223,"revert; four alternating paired runs, SILK and hybrid encode regressions of 6-7%"

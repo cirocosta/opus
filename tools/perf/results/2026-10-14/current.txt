@@ -1,0 +1,102 @@
+goos: linux
+goarch: amd64
+pkg: github.com/cirocosta/opus
+cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+BenchmarkEncode/silk8_mono         	    4586	    131521 ns/op	   2.43 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/silk16_mono        	    2259	    267596 ns/op	   2.39 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/voip24_fec         	    6694	     86008 ns/op	  11.16 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/hybrid48_stereo    	     985	    605310 ns/op	   6.34 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_mono        	    4921	    121187 ns/op	  15.84 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_stereo      	    2430	    245313 ns/op	  15.65 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk8_mono         	   83139	      7209 ns/op	  88.77 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk16_mono        	   43791	     13515 ns/op	  94.71 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/voip24_fec         	   25702	     23509 ns/op	  81.67 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/hybrid48_stereo    	    9894	     59110 ns/op	 129.93 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_mono        	   20901	     28693 ns/op	 133.83 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_stereo      	   10000	     53202 ns/op	 144.35 MB/s	       0 B/op	       0 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/cirocosta/opus
+cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+BenchmarkEncode/silk8_mono         	    4508	    131113 ns/op	   2.44 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/silk16_mono        	    2246	    269946 ns/op	   2.37 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/voip24_fec         	    6952	     87282 ns/op	  11.00 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/hybrid48_stereo    	     991	    604339 ns/op	   6.35 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_mono        	    4932	    121728 ns/op	  15.77 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_stereo      	    2401	    248733 ns/op	  15.44 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk8_mono         	   82310	      7183 ns/op	  89.10 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk16_mono        	   44352	     13888 ns/op	  92.16 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/voip24_fec         	   25424	     23419 ns/op	  81.98 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/hybrid48_stereo    	   10000	     58804 ns/op	 130.60 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_mono        	   20773	     28862 ns/op	 133.05 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_stereo      	   10000	     53629 ns/op	 143.20 MB/s	       0 B/op	       0 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/cirocosta/opus
+cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+BenchmarkEncode/silk8_mono         	    4638	    130192 ns/op	   2.46 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/silk16_mono        	    2214	    277843 ns/op	   2.30 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/voip24_fec         	    6883	     85632 ns/op	  11.21 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/hybrid48_stereo    	     993	    596273 ns/op	   6.44 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_mono        	    4971	    120670 ns/op	  15.91 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_stereo      	    2479	    242648 ns/op	  15.83 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk8_mono         	   84538	      7092 ns/op	  90.24 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk16_mono        	   44754	     13389 ns/op	  95.60 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/voip24_fec         	   25707	     23169 ns/op	  82.87 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/hybrid48_stereo    	   10000	     58892 ns/op	 130.41 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_mono        	   20936	     28631 ns/op	 134.12 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_stereo      	   10000	     52852 ns/op	 145.31 MB/s	       0 B/op	       0 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/cirocosta/opus
+cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+BenchmarkEncode/silk8_mono         	    4671	    133247 ns/op	   2.40 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/silk16_mono        	    2208	    269310 ns/op	   2.38 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/voip24_fec         	    6884	     85788 ns/op	  11.19 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/hybrid48_stereo    	    1003	    597190 ns/op	   6.43 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_mono        	    4969	    121466 ns/op	  15.81 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_stereo      	    2470	    248161 ns/op	  15.47 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk8_mono         	   83301	      7123 ns/op	  89.85 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk16_mono        	   44530	     13387 ns/op	  95.61 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/voip24_fec         	   26149	     23506 ns/op	  81.68 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/hybrid48_stereo    	   10000	     59575 ns/op	 128.91 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_mono        	   20685	     28826 ns/op	 133.21 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_stereo      	   10000	     53697 ns/op	 143.03 MB/s	       0 B/op	       0 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/cirocosta/opus
+cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+BenchmarkEncode/silk8_mono         	    4522	    131946 ns/op	   2.43 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/silk16_mono        	    2210	    268575 ns/op	   2.38 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/voip24_fec         	    6753	     86826 ns/op	  11.06 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/hybrid48_stereo    	    1003	    601992 ns/op	   6.38 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_mono        	    5043	    121261 ns/op	  15.83 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_stereo      	    2379	    244840 ns/op	  15.68 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk8_mono         	   82477	      7143 ns/op	  89.60 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk16_mono        	   44745	     13418 ns/op	  95.39 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/voip24_fec         	   25731	     23166 ns/op	  82.88 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/hybrid48_stereo    	   10000	     59058 ns/op	 130.04 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_mono        	   20816	     28702 ns/op	 133.79 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_stereo      	   10000	     54016 ns/op	 142.18 MB/s	       0 B/op	       0 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/cirocosta/opus
+cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+BenchmarkEncode/silk8_mono         	    4587	    130289 ns/op	   2.46 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/silk16_mono        	    2208	    269501 ns/op	   2.37 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/voip24_fec         	    6886	     87628 ns/op	  10.96 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/hybrid48_stereo    	     997	    594261 ns/op	   6.46 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_mono        	    5019	    121092 ns/op	  15.86 MB/s	       0 B/op	       0 allocs/op
+BenchmarkEncode/celt48_stereo      	    2346	    246601 ns/op	  15.57 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk8_mono         	   83090	      7162 ns/op	  89.36 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/silk16_mono        	   44384	     13765 ns/op	  92.99 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/voip24_fec         	   25546	     23116 ns/op	  83.06 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/hybrid48_stereo    	   10000	     61257 ns/op	 125.37 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_mono        	   20599	     28901 ns/op	 132.87 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDecode/celt48_stereo      	   10000	     53206 ns/op	 144.34 MB/s	       0 B/op	       0 allocs/op
+PASS
