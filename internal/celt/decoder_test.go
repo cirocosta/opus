@@ -3,13 +3,23 @@ package celt
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 // decodeFrame mirrors decode_frame of the C driver.
-func decodeFrame(t *testing.T, d *Decoder, h *fnvHash, pcm []float32, data []byte, frameSize int, accum bool) {
+func decodeFrame(
+	_ *testing.T,
+	d *Decoder,
+	h *fnvHash,
+	pcm []float32,
+	data []byte,
+	frameSize int,
+	accum bool,
+) {
 	CC := d.Channels()
 	if accum {
 		for i := 0; i < frameSize*CC; i++ {
@@ -29,7 +39,16 @@ var endBands = [4]int{13, 17, 19, 21}
 // runVector mirrors run_vec of the C driver. It returns the hash, the
 // number of decoded frames, and the number of packets whose final range
 // matched the vector (when there is no loss at 48 kHz).
-func runVector(t *testing.T, path string, CC int, fs int32, pattern int, accum bool, complexity int, keep bool) (*fnvHash, int, int, int) {
+func runVector(
+	t *testing.T,
+	path string,
+	CC int,
+	fs int32,
+	pattern int,
+	accum bool,
+	complexity int,
+	keep bool,
+) (*fnvHash, int, int, int) {
 	f, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -110,13 +129,30 @@ func TestVectors(t *testing.T) {
 		if g.kind != "vec" {
 			continue
 		}
-		name := fmt.Sprintf("v%s_ch%s_fs%s_loss%s_acc%s_cx%s", g.params["v"], g.params["ch"], g.params["fs"], g.params["loss"], g.params["accum"], g.params["cx"])
+		name := fmt.Sprintf(
+			"v%s_ch%s_fs%s_loss%s_acc%s_cx%s",
+			g.params["v"],
+			g.params["ch"],
+			g.params["fs"],
+			g.params["loss"],
+			g.params["accum"],
+			g.params["cx"],
+		)
 		if only != "" && only != name {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(dir, "testvector"+g.params["v"]+".bit")
-			h, frames, ok, tot := runVector(t, path, g.int(t, "ch"), int32(g.int(t, "fs")), g.int(t, "loss"), g.int(t, "accum") != 0, g.int(t, "cx"), keep)
+			h, frames, ok, tot := runVector(
+				t,
+				path,
+				g.int(t, "ch"),
+				int32(g.int(t, "fs")),
+				g.int(t, "loss"),
+				g.int(t, "accum") != 0,
+				g.int(t, "cx"),
+				keep,
+			)
 			if ok != tot {
 				t.Errorf("final range matched %d/%d packets", ok, tot)
 			}
@@ -128,5 +164,33 @@ func TestVectors(t *testing.T) {
 				compareDump(t, h.dump)
 			}
 		})
+	}
+}
+
+func TestRotationRecurrence(t *testing.T) {
+	rng := rand.New(rand.NewPCG(977, 431))
+	coefficients := [][2]float32{{1, 0}, {0, 1}, {.83, .25}, {.25, -.83}, {-.5, .75}}
+	for length := 0; length <= maxBandSize; length++ {
+		for _, pair := range coefficients {
+			got, want := make([]float32, length), make([]float32, length)
+			for i := range got {
+				got[i] = math.Float32frombits(rng.Uint32())
+			}
+			copy(want, got)
+			expRotation1(got, length, 1, pair[0], pair[1])
+			expRotation1Generic(want, length, 1, pair[0], pair[1])
+			for i := range got {
+				if math.Float32bits(got[i]) != math.Float32bits(want[i]) {
+					t.Fatalf(
+						"length %d, coefficients %v, sample %d: got %08x, want %08x",
+						length,
+						pair,
+						i,
+						math.Float32bits(got[i]),
+						math.Float32bits(want[i]),
+					)
+				}
+			}
+		}
 	}
 }

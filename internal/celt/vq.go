@@ -13,6 +13,35 @@ const maxBandSize = 176
 
 // expRotation1 is exp_rotation1.
 func expRotation1(X []float32, length, stride int, c, s float32) {
+	X = X[:length]
+	if stride != 1 {
+		expRotation1Generic(X, length, stride, c, s)
+		return
+	}
+	if length < 2 {
+		return
+	}
+	ms := -s
+	carry := X[0]
+	for i := 0; i < length-1; i++ {
+		next := X[i+1]
+		X[i] = float32(c*carry) + float32(ms*next)
+		carry = float32(c*next) + float32(s*carry)
+	}
+	X[length-1] = carry
+	if length < 3 {
+		return
+	}
+	carry = X[length-2]
+	for i := length - 3; i >= 0; i-- {
+		next := X[i]
+		X[i+1] = float32(c*carry) + float32(s*next)
+		carry = float32(c*next) + float32(ms*carry)
+	}
+	X[0] = carry
+}
+
+func expRotation1Generic(X []float32, length, stride int, c, s float32) {
 	ms := -s
 	for i := 0; i < length-stride; i++ {
 		x1 := X[i]
@@ -31,6 +60,9 @@ func expRotation1(X []float32, length, stride int, c, s float32) {
 var spreadFactor = [3]int{15, 10, 5}
 
 // expRotation is exp_rotation.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func expRotation(X []float32, length, dir, stride, K, spread int) {
 	if 2*K >= length || spread == spreadNone {
 		return
@@ -102,6 +134,9 @@ func extractCollapseMask(iy []int, N, B int) uint {
 }
 
 // opPVQSearch is op_pvq_search_c. It overwrites X with its absolute value.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func opPVQSearch(X []float32, iy []int, K, N int) float32 {
 	var yBuf [maxBandSize]float32
 	var signxBuf [maxBandSize]int
@@ -213,7 +248,13 @@ func opPVQSearch(X []float32, iy []int, K, N int) float32 {
 // algQuant is alg_quant: the algebraic pulse-vector quantiser. X is
 // replaced by the quantised vector when resynth is set. It returns a mask
 // of the blocks in the band that received pulses.
-func algQuant(X []float32, N, K, spread, B int, enc *entcode.Encoder, gain float32, resynth bool) uint {
+func algQuant(
+	X []float32,
+	N, K, spread, B int,
+	enc *entcode.Encoder,
+	gain float32,
+	resynth bool,
+) uint {
 	var iyBuf [maxBandSize + 3]int
 	iy := iyBuf[:N+3]
 
