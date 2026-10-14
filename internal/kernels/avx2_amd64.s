@@ -2,7 +2,8 @@
 
 #include "textflag.h"
 
-// independent lag lanes preserve the scalar additions and avoid FMA.
+// n > 0; lags is a positive multiple of 64. y has n+lags-1 elements.
+// each lane accumulates one adjacent lag in input order, without FMA.
 TEXT ·crossCorrelationAVX2(SB), NOSPLIT, $0-40
 	MOVQ x+0(FP), R9
 	MOVQ y+8(FP), R10
@@ -60,7 +61,9 @@ corr_store:
 	VZEROUPPER
 	RET
 
-// convert eight signed weights directly to int32, then to float32.
+// rows is a positive multiple of 8 and cols > 0. weights is column-major
+// with stride bytes per column. each lane adds columns in scalar order.
+// signed weights convert exactly through int32 to float32.
 TEXT ·denseAccumAVX2(SB), NOSPLIT, $0-48
 	MOVQ out+0(FP), DX
 	MOVQ weights+8(FP), R9
@@ -92,6 +95,8 @@ avx_dense_column:
 	RET
 
 // independent neuron blocks share each input broadcast.
+// rows is a positive multiple of 24 and cols > 0. the column-major layout
+// and rounding match denseAccumAVX2; four columns are unrolled in order.
 TEXT ·denseAccumWideAVX2(SB), NOSPLIT, $0-48
 	MOVQ out+0(FP), DX
 	MOVQ weights+8(FP), R9

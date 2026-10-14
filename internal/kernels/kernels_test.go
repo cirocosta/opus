@@ -253,13 +253,36 @@ func TestWarpedFeedback(t *testing.T) {
 			}
 			wantState := append([]int32(nil), state...)
 			diff, warp := int32(rng.Uint32()), int32(rng.Uint32())
-			got, want := WarpedFeedback(state, coeff, diff, warp), warpedFeedbackGeneric(wantState, coeff, diff, warp)
+			got, want := WarpedFeedback(
+				state,
+				coeff,
+				diff,
+				warp,
+			), warpedFeedbackGeneric(
+				wantState,
+				coeff,
+				diff,
+				warp,
+			)
 			if got != want {
-				t.Fatalf("WarpedFeedback(order=%d, trial=%d): got %d, want %d", order, trial, got, want)
+				t.Fatalf(
+					"WarpedFeedback(order=%d, trial=%d): got %d, want %d",
+					order,
+					trial,
+					got,
+					want,
+				)
 			}
 			for i := range state {
 				if state[i] != wantState[i] {
-					t.Fatalf("WarpedFeedback(order=%d, trial=%d): state %d: got %d, want %d", order, trial, i, state[i], wantState[i])
+					t.Fatalf(
+						"WarpedFeedback(order=%d, trial=%d): state %d: got %d, want %d",
+						order,
+						trial,
+						i,
+						state[i],
+						wantState[i],
+					)
 				}
 			}
 		}
@@ -279,15 +302,24 @@ func BenchmarkCrossCorrelation(b *testing.B) {
 }
 
 func BenchmarkDenseAccum(b *testing.B) {
-	weights := make([]int8, 32*32)
-	for i := range weights {
-		weights[i] = int8(i*79 + 11)
-	}
-	x, out := samples(32, 1), make([]float32, 32)
-	b.ReportAllocs()
-	for b.Loop() {
-		clear(out)
-		DenseAccum(out, weights, x, 32, 32, 32)
+	for _, c := range []struct{ rows, cols, stride int }{
+		{rows: 24, cols: 32, stride: 72},
+		{rows: 24, cols: 24, stride: 72},
+		{rows: 32, cols: 25, stride: 32},
+		{rows: 32, cols: 32, stride: 32},
+	} {
+		b.Run(fmt.Sprintf("r%dc%ds%d", c.rows, c.cols, c.stride), func(b *testing.B) {
+			weights := make([]int8, c.cols*c.stride)
+			for i := range weights {
+				weights[i] = int8(i*79 + 11)
+			}
+			x, out := samples(c.cols, 1), make([]float32, c.rows)
+			b.ReportAllocs()
+			for b.Loop() {
+				clear(out)
+				DenseAccum(out, weights, x, c.rows, c.cols, c.stride)
+			}
+		})
 	}
 }
 
@@ -330,5 +362,88 @@ func BenchmarkSynthesize(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		Synthesize(history, residual, coeff, 1024, out, 16)
+	}
+}
+
+func TestInterpolate(t *testing.T) {
+	rng := rand.New(rand.NewPCG(123, 456))
+	var phases [12][8]int16
+	for i := range phases {
+		for j := range phases[i] {
+			phases[i][j] = int16(rng.Uint32())
+		}
+	}
+	for _, limit := range []int32{0, 1, 65535, 65536, 33 * 65536, 127 * 65536} {
+		for _, step := range []int32{12345, 16384, 21845, 32768, 43691, 49152, 65536, 98304, 131072, 196608} {
+			n := int((int64(limit) + int64(step) - 1) / int64(step))
+			src := make([]int16, int(limit>>16)+8)
+			for i := range src {
+				src[i] = int16(rng.Uint32())
+			}
+			got, want := make([]int16, n+1), make([]int16, n+1)
+			got[n], want[n] = 123, 123
+			interpolateGeneric(want[:n], src, &phases, step)
+			written := Interpolate(got[:n], src, &phases, limit, step)
+			if written != n {
+				t.Errorf(
+					"Interpolate(limit=%d, step=%d): got %d samples, want %d",
+					limit,
+					step,
+					written,
+					n,
+				)
+			}
+			for i := range got {
+				if got[i] != want[i] {
+					t.Fatalf(
+						"Interpolate(limit=%d, step=%d): sample %d: got %d, want %d",
+						limit,
+						step,
+						i,
+						got[i],
+						want[i],
+					)
+				}
+			}
+		}
+	}
+}
+
+func TestInterpolateExtremes(t *testing.T) {
+	for _, input := range []int16{-32768, -32767, -1, 0, 1, 32767} {
+		for _, weight := range []int16{-32768, -32767, -1, 0, 1, 32767} {
+			var phases [12][8]int16
+			for i := range phases {
+				for j := range phases[i] {
+					phases[i][j] = weight
+				}
+			}
+			src := make([]int16, 20)
+			for i := range src {
+				src[i] = input
+			}
+			const limit, step = 12 * 65536, 5461
+			dst := make([]int16, (limit+step-1)/step+1)
+			dst[len(dst)-1] = 123
+			written := Interpolate(dst, src, &phases, limit, step)
+			// accumulate in int64, then apply the reference's int32 wrap.
+			sum := int32(int64(input) * int64(weight) * 8)
+			want := int16(max(-32768, min(32767, (int64(sum)+16384)>>15)))
+			for i, got := range dst[:written] {
+				if got != want {
+					t.Fatalf(
+						"input %d, weight %d, sample %d: got %d, want %d",
+						input,
+						weight,
+						i,
+						got,
+						want,
+					)
+				}
+			}
+			if dst[written] != 123 {
+				t.Fatal("output exceeded the requested sample count")
+			}
+		}
 	}
 }

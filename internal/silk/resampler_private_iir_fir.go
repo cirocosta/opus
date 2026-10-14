@@ -2,6 +2,8 @@
 
 package silk
 
+import "github.com/cirocosta/opus/internal/kernels"
+
 // interpolationCoefficients stores both halves of each FIR phase contiguously.
 // It is initialized once and treated as read-only by all resamplers.
 var interpolationCoefficients = func() [12][8]int16 {
@@ -21,26 +23,7 @@ func resamplerPrivateIIRFIRInterpol(
 	buf []int16,
 	maxIndexQ16, indexIncrementQ16 int32,
 ) int {
-	count := int((int64(maxIndexQ16) + int64(indexIncrementQ16) - 1) / int64(indexIncrementQ16))
-	out = out[:count]
-	var indexQ16 int32
-	for n := range out {
-		phase := (indexQ16 & 0xffff) * 12 >> 16
-		coeff := &interpolationCoefficients[phase]
-		i := int(indexQ16 >> 16)
-		window := buf[i : i+8]
-		resQ15 := int32(window[0]) * int32(coeff[0])
-		resQ15 += int32(window[1]) * int32(coeff[1])
-		resQ15 += int32(window[2]) * int32(coeff[2])
-		resQ15 += int32(window[3]) * int32(coeff[3])
-		resQ15 += int32(window[4]) * int32(coeff[4])
-		resQ15 += int32(window[5]) * int32(coeff[5])
-		resQ15 += int32(window[6]) * int32(coeff[6])
-		resQ15 += int32(window[7]) * int32(coeff[7])
-		out[n] = int16(sat16(rshiftRound(resQ15, 15)))
-		indexQ16 += indexIncrementQ16
-	}
-	return count
+	return kernels.Interpolate(out, buf, &interpolationCoefficients, maxIndexQ16, indexIncrementQ16)
 }
 
 // resamplerPrivateIIRFIR is silk_resampler_private_IIR_FIR: upsample

@@ -29,3 +29,7 @@ func synthesize(history, residual []int32, coeff []int16, gain int32, dst []int1
 func warpedFeedback(state []int32, coeff []int16, diff, warp int32) int32 {
 	return warpedFeedbackGeneric(state, coeff, diff, warp)
 }
+
+func interpolate(dst, src []int16, phases *[12][8]int16, step int32) {
+	interpolateGeneric(dst, src, phases, step)
+}

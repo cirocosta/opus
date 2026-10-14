@@ -88,3 +88,9 @@ func denseAccumAVX2(out *float32, weights *int8, x *float32, rows, cols, stride 
 //go:noescape
 func denseAccumWideAVX2(out *float32, weights *int8, x *float32, rows, cols, stride int)
 
+func interpolate(dst, src []int16, phases *[12][8]int16, step int32) {
+	interpolateSSE2(&dst[0], &src[0], phases, len(dst), step)
+}
+
+//go:noescape
+func interpolateSSE2(dst, src *int16, phases *[12][8]int16, n int, step int32)

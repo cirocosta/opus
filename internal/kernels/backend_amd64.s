@@ -387,3 +387,40 @@ feedback_last:
 	ADDL R9, R10
 	MOVL R10, ret+32(FP)
 	RET
+
+// eight signed products and pair sums wrap exactly in int32.
+TEXT ·interpolateSSE2(SB), NOSPLIT, $0-36
+	MOVQ dst+0(FP), DX
+	MOVQ src+8(FP), R9
+	MOVQ phases+16(FP), R10
+	MOVQ n+24(FP), SI
+	MOVL step+32(FP), DI
+	XORL CX, CX
+	PCMPEQL X2, X2
+	PSRLL $31, X2
+interpolate_sample:
+	MOVL CX, R8
+	SHRL $16, R8
+	MOVL CX, R11
+	ANDL $0xffff, R11
+	IMULL $12, R11
+	SHRL $16, R11
+	SHLQ $4, R11
+	MOVOU (R9)(R8*2), X0
+	MOVOU (R10)(R11*1), X1
+	PMADDWL X1, X0
+	PSHUFL $78, X0, X1
+	PADDL X1, X0
+	PSHUFL $177, X0, X1
+	PADDL X1, X0
+	PSRAL $14, X0
+	PADDL X2, X0
+	PSRAL $1, X0
+	PACKSSLW X0, X0
+	MOVD X0, R8
+	MOVW R8, (DX)
+	ADDQ $2, DX
+	ADDL DI, CX
+	DECQ SI
+	JNZ interpolate_sample
+	RET
