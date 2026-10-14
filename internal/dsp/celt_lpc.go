@@ -12,6 +12,9 @@ const lpcStackMax = 2048
 
 // CeltLPC is _celt_lpc: it computes p LPC coefficients from the p+1
 // autocorrelation values in ac using the Levinson-Durbin recursion.
+// preserve reference harmonic-search and numerical stopping decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func CeltLPC(lpc []float32, ac []float32, p int) {
 	lpc = lpc[:p]
 	ac = ac[:p+1]

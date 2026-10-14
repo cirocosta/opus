@@ -51,6 +51,9 @@ func CeltPitchXcorr(x, y []float32, xcorr []float32, n, maxPitch int) {
 }
 
 // findBestPitch is find_best_pitch.
+// preserve reference harmonic-search and numerical stopping decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func findBestPitch(xcorr []float32, y []float32, n, maxPitch int, bestPitch *[2]int) {
 	syy := float32(1)
 	var bestNum [2]float32
@@ -177,6 +180,9 @@ func PitchDownsample(x [][]float32, xLp []float32, n, c, factor int) {
 
 // PitchSearch is pitch_search: it returns the pitch period (in samples of
 // xLp) that best matches xLp (n values) within y (n+maxPitch values).
+// preserve reference harmonic-search and numerical stopping decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func PitchSearch(xLp []float32, y []float32, n, maxPitch int) int {
 	bestPitch := [2]int{0, 0}
 	lag := n + maxPitch
@@ -252,6 +258,9 @@ var secondCheck = [16]int{0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2}
 // RemoveDoubling is remove_doubling: it checks the pitch *t0 for period
 // doubling and returns the pitch gain. x holds maxperiod history samples
 // followed by n samples. *t0 is updated in place.
+// preserve reference harmonic-search and numerical stopping decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func RemoveDoubling(
 	x []float32,
 	maxperiod, minperiod, n int,

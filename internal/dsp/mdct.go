@@ -20,7 +20,12 @@ const mdctMaxN4 = 480
 // inputs scaled by 4/N. It reads N/2+overlap samples of in (the C function
 // documents that it trashes the input, but the float path does not write
 // it) and writes N/2 coefficients to out with the given stride.
-func CltMDCTForward(l *MDCTLookup, in, out []float32, window []float32, overlap, shift, stride int) {
+func CltMDCTForward(
+	l *MDCTLookup,
+	in, out []float32,
+	window []float32,
+	overlap, shift, stride int,
+) {
 	st := l.KFFT[shift]
 	scale := st.Scale
 
@@ -126,7 +131,12 @@ func CltMDCTForward(l *MDCTLookup, in, out []float32, window []float32, overlap,
 // with weighted overlap-add (scales implicitly by 1/2). It reads N/2
 // coefficients of in with the given stride and writes N/2+overlap samples
 // to out, where N = l.N>>shift.
-func CltMDCTBackward(l *MDCTLookup, in, out []float32, window []float32, overlap, shift, stride int) {
+func CltMDCTBackward(
+	l *MDCTLookup,
+	in, out []float32,
+	window []float32,
+	overlap, shift, stride int,
+) {
 	n := l.N
 	trig := l.Trig
 	for i := 0; i < shift; i++ {

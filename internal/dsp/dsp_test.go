@@ -220,7 +220,7 @@ func TestFFT(t *testing.T) {
 	g := loadGolden(t, "testdata", "fft.bin")
 	r := &rng{s: 12345}
 	for sh := 0; sh < 4; sh++ {
-		st := MDCT48000_960.KFFT[sh]
+		st := MDCT48000x960.KFFT[sh]
 		in := make([]KissFFTCpx, st.Nfft)
 		out := make([]KissFFTCpx, st.Nfft)
 		for i := range in {
@@ -261,7 +261,13 @@ func TestMDCT(t *testing.T) {
 			in[i] = float32(20000 * r.frand())
 		}
 		CltMDCTForward(m.MDCT, in, out, m.Window, ov, shift, stride)
-		s := &stats{name: "clt_mdct_forward shift=" + strconv.Itoa(shift) + " stride=" + strconv.Itoa(stride)}
+		s := &stats{
+			name: "clt_mdct_forward shift=" + strconv.Itoa(
+				shift,
+			) + " stride=" + strconv.Itoa(
+				stride,
+			),
+		}
 		for i := 0; i < n2*stride; i++ {
 			s.add(out[i], g.f())
 		}
@@ -273,7 +279,13 @@ func TestMDCT(t *testing.T) {
 			out[i] = float32(20000 * r.frand())
 		}
 		CltMDCTBackward(m.MDCT, in, out, m.Window, ov, shift, stride)
-		s = &stats{name: "clt_mdct_backward shift=" + strconv.Itoa(shift) + " stride=" + strconv.Itoa(stride)}
+		s = &stats{
+			name: "clt_mdct_backward shift=" + strconv.Itoa(
+				shift,
+			) + " stride=" + strconv.Itoa(
+				stride,
+			),
+		}
 		for i := 0; i < n2+ov; i++ {
 			s.add(out[i], g.f())
 		}
@@ -304,7 +316,15 @@ func TestLPC(t *testing.T) {
 		}
 		sh := CeltAutocorr(x, ac, win, ov, lag, n)
 		eqI(t, "autocorr shift", int32(sh), g.i())
-		s := &stats{name: "_celt_autocorr n=" + strconv.Itoa(n) + " lag=" + strconv.Itoa(lag) + " overlap=" + strconv.Itoa(ov)}
+		s := &stats{
+			name: "_celt_autocorr n=" + strconv.Itoa(
+				n,
+			) + " lag=" + strconv.Itoa(
+				lag,
+			) + " overlap=" + strconv.Itoa(
+				ov,
+			),
+		}
 		for i := 0; i <= lag; i++ {
 			s.add(ac[i], g.f())
 		}
@@ -473,14 +493,26 @@ func testMath(t *testing.T, file string, log2, exp2 func(float32) float32, libmU
 		se.add(exp2(x), g.f())
 		sex.add(exp2(float32(float32(.5*x)*log2e)), g.f())
 	}
-	sc, sc2, ss := &stats{name: "celt_cos_norm"}, &stats{name: "celt_cos_norm2"}, &stats{name: "celt_sin"}
+	sc, sc2, ss := &stats{
+		name: "celt_cos_norm",
+	}, &stats{
+		name: "celt_cos_norm2",
+	}, &stats{
+		name: "celt_sin",
+	}
 	for i := 0; i < n; i++ {
 		x := g.f()
 		sc.add(CeltCosNorm(x), g.f())
 		sc2.add(CeltCosNorm2(x), g.f())
 		ss.add(CeltSin(x), g.f())
 	}
-	sa, sap, sf := &stats{name: "celt_atan_norm"}, &stats{name: "celt_atan2p_norm"}, &stats{name: "fast_atan2f"}
+	sa, sap, sf := &stats{
+		name: "celt_atan_norm",
+	}, &stats{
+		name: "celt_atan2p_norm",
+	}, &stats{
+		name: "fast_atan2f",
+	}
 	for i := 0; i < n; i++ {
 		x, y, a, b := g.f(), g.f(), g.f(), g.f()
 		sa.add(CeltAtanNorm(x), g.f())

@@ -9,11 +9,9 @@ import (
 
 // FloatApprox selects the FLOAT_APPROX variants of CeltLog2 and CeltExp2.
 //
-// PORTING.md targets a build without FLOAT_APPROX, so the default uses
-// libm (log and exp in double precision). Note that the configure script
-// of libopus 1.6.1 enables FLOAT_APPROX by default on x86, and the scalar
-// reference build defines it in config.h. Set this to true to match that
-// build bit for bit. Both variants are always available as
+// The scalar libopus 1.6.1 reference enables FLOAT_APPROX. Keeping this
+// constant true preserves its arithmetic and bit-exact goldens.
+// Both variants are available as
 // [CeltLog2Libm], [CeltExp2Libm], [CeltLog2Approx] and [CeltExp2Approx].
 const FloatApprox = true
 

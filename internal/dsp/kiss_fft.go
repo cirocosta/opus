@@ -42,9 +42,7 @@ func kfBfly2(fout []KissFFTCpx, m, n int) {
 	tw := float32(0.7071067812)
 	for i := 0; i < n; i++ {
 		f := fout[8*i : 8*i+8 : 8*i+8]
-		var t KissFFTCpx
-
-		t = f[4]
+		t := f[4]
 		f[4].R = f[0].R - t.R
 		f[4].I = f[0].I - t.I
 		f[0].R += t.R
