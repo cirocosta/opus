@@ -6,6 +6,9 @@ import "github.com/cirocosta/opus/internal/kernels"
 
 // decodeCore is silk_decode_core: core decoder. Performs inverse NSQ
 // operation LTP + LPC.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pulses []int16) {
 	var aQ12Tmp [maxLPCOrder]int16
 	lag := 0
@@ -15,29 +18,9 @@ func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pul
 	resQ14 := psDec.scratch.resQ14[:psDec.subfrLength]
 	sLPCQ14 := psDec.scratch.sLPCQ14[:psDec.subfrLength+maxLPCOrder]
 
-	offsetQ10 := int32(
-		quantizationOffsetsQ10[psDec.indices.signalType>>1][psDec.indices.quantOffsetType],
-	)
-
 	nlsfInterpolationFlag := psDec.indices.nlsfInterpCoefQ2 < 1<<2
 
-	// Decode excitation.
-	randSeed := int32(psDec.indices.seed)
-	for i := 0; i < psDec.frameLength; i++ {
-		randSeed = silkRAND(randSeed)
-		psDec.excQ14[i] = lshift(int32(pulses[i]), 14)
-		if psDec.excQ14[i] > 0 {
-			psDec.excQ14[i] -= quantLevelAdjustQ10 << 4
-		} else if psDec.excQ14[i] < 0 {
-			psDec.excQ14[i] += quantLevelAdjustQ10 << 4
-		}
-		psDec.excQ14[i] += offsetQ10 << 4
-		if randSeed < 0 {
-			psDec.excQ14[i] = -psDec.excQ14[i]
-		}
-
-		randSeed = add32ovflw(randSeed, int32(pulses[i]))
-	}
+	psDec.decodeExcitation(pulses)
 
 	// Copy LPC state.
 	copy(sLPCQ14[:maxLPCOrder], psDec.sLPCQ14Buf[:])
@@ -172,4 +155,29 @@ func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pul
 
 	// Save LPC state.
 	copy(psDec.sLPCQ14Buf[:], sLPCQ14[:maxLPCOrder])
+}
+
+// decodeExcitation reconstructs pulse offsets and seed-driven signs.
+func (psDec *decoderState) decodeExcitation(pulses []int16) {
+	offsetQ10 := int32(
+		quantizationOffsetsQ10[psDec.indices.signalType>>1][psDec.indices.quantOffsetType],
+	)
+
+	// Decode excitation.
+	randSeed := int32(psDec.indices.seed)
+	for i := 0; i < psDec.frameLength; i++ {
+		randSeed = silkRAND(randSeed)
+		psDec.excQ14[i] = lshift(int32(pulses[i]), 14)
+		if psDec.excQ14[i] > 0 {
+			psDec.excQ14[i] -= quantLevelAdjustQ10 << 4
+		} else if psDec.excQ14[i] < 0 {
+			psDec.excQ14[i] += quantLevelAdjustQ10 << 4
+		}
+		psDec.excQ14[i] += offsetQ10 << 4
+		if randSeed < 0 {
+			psDec.excQ14[i] = -psDec.excQ14[i]
+		}
+
+		randSeed = add32ovflw(randSeed, int32(pulses[i]))
+	}
 }

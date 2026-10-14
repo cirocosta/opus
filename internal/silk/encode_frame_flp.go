@@ -6,8 +6,12 @@ import "github.com/cirocosta/opus/internal/entcode"
 
 // Constants of silk_encode_frame_FLP.
 var (
-	vadActivityThresholdQ8 = int(fixConstF32(speechActivityDTXThres, 8))  // SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 )
-	lbrrSpeechActThresQ8   = int(fixConstF32(lbrrSpeechActivityThres, 8)) // SILK_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 )
+	vadActivityThresholdQ8 = int(
+		fixConstF32(speechActivityDTXThres, 8),
+	) // SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 )
+	lbrrSpeechActThresQ8 = int(
+		fixConstF32(lbrrSpeechActivityThres, 8),
+	) // SILK_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 )
 )
 
 // encodeDoVADFLP is silk_encode_do_VAD_FLP. activity is the decision of
@@ -43,7 +47,14 @@ func (psEnc *encoderStateFLP) encodeDoVADFLP(activity int) {
 }
 
 // encodeFrameFLP is silk_encode_frame_FLP: encode a frame.
-func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entcode.Encoder, condCoding, maxBits, useCBR int) int {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func (psEnc *encoderStateFLP) encodeFrameFLP(
+	pnBytesOut *int32,
+	psRangeEnc *entcode.Encoder,
+	condCoding, maxBits, useCBR int,
+) int {
 	var (
 		sRangeEncCopy, sRangeEncCopy2 entcode.Encoder
 		pGainsQ16                     [maxNbSubfr]int32
@@ -80,12 +91,18 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 	lpVariableCutoff(&psEnc.sCmn.sLP, psEnc.sCmn.inputBuf[1:], psEnc.sCmn.frameLength)
 
 	// Copy new frame to front of input buffer.
-	short2floatArray(psEnc.xBuf[xFrame+laShapeMs*psEnc.sCmn.fsKHz:], psEnc.sCmn.inputBuf[1:], psEnc.sCmn.frameLength)
+	short2floatArray(
+		psEnc.xBuf[xFrame+laShapeMs*psEnc.sCmn.fsKHz:],
+		psEnc.sCmn.inputBuf[1:],
+		psEnc.sCmn.frameLength,
+	)
 
 	// Add tiny signal to avoid high CPU load from denormalized floating
 	// point numbers.
 	for i := 0; i < 8; i++ {
-		psEnc.xBuf[xFrame+laShapeMs*psEnc.sCmn.fsKHz+i*(psEnc.sCmn.frameLength>>3)] += float32(float32(1-(i&2)) * 1e-6)
+		psEnc.xBuf[xFrame+laShapeMs*psEnc.sCmn.fsKHz+i*(psEnc.sCmn.frameLength>>3)] += float32(
+			float32(1-(i&2)) * 1e-6,
+		)
 	}
 
 	if psEnc.sCmn.prefillFlag == 0 {
@@ -119,12 +136,14 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 		ecPrevLagIndexCopy := psEnc.sCmn.ecPrevLagIndex
 		ecPrevSignalTypeCopy := psEnc.sCmn.ecPrevSignalType
 		ecBufCopy := sc.ecBufCopy[:]
+	rateSearch:
 		for iter := 0; ; iter++ {
-			if gainsIDv == gainsIDLower {
+			switch gainsIDv {
+			case gainsIDLower:
 				nBits = nBitsLower
-			} else if gainsIDv == gainsIDUpper {
+			case gainsIDUpper:
 				nBits = nBitsUpper
-			} else {
+			default:
 				// Restore part of the input state.
 				if iter > 0 {
 					*psRangeEnc = sRangeEncCopy
@@ -135,7 +154,14 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 				}
 
 				// Noise shaping quantization.
-				psEnc.nsqWrapperFLP(sEncCtrl, &psEnc.sCmn.indices, &psEnc.sCmn.sNSQ, psEnc.sCmn.pulses[:], psEnc.xBuf[:], xFrame)
+				psEnc.nsqWrapperFLP(
+					sEncCtrl,
+					&psEnc.sCmn.indices,
+					&psEnc.sCmn.sNSQ,
+					psEnc.sCmn.pulses[:],
+					psEnc.xBuf[:],
+					xFrame,
+				)
 
 				if iter == maxIter && foundLower == 0 {
 					sRangeEncCopy2 = *psRangeEnc
@@ -145,8 +171,13 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 				psEnc.sCmn.encodeIndices(psRangeEnc, psEnc.sCmn.nFramesEncoded, false, condCoding)
 
 				// Encode Excitation Signal.
-				encodePulses(psRangeEnc, int(psEnc.sCmn.indices.signalType), int(psEnc.sCmn.indices.quantOffsetType),
-					psEnc.sCmn.pulses[:], psEnc.sCmn.frameLength)
+				encodePulses(
+					psRangeEnc,
+					int(psEnc.sCmn.indices.signalType),
+					int(psEnc.sCmn.indices.quantOffsetType),
+					psEnc.sCmn.pulses[:],
+					psEnc.sCmn.frameLength,
+				)
 
 				nBits = int32(psRangeEnc.Tell())
 
@@ -170,16 +201,26 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 						psEnc.sCmn.pulses[i] = 0
 					}
 
-					psEnc.sCmn.encodeIndices(psRangeEnc, psEnc.sCmn.nFramesEncoded, false, condCoding)
+					psEnc.sCmn.encodeIndices(
+						psRangeEnc,
+						psEnc.sCmn.nFramesEncoded,
+						false,
+						condCoding,
+					)
 
-					encodePulses(psRangeEnc, int(psEnc.sCmn.indices.signalType), int(psEnc.sCmn.indices.quantOffsetType),
-						psEnc.sCmn.pulses[:], psEnc.sCmn.frameLength)
+					encodePulses(
+						psRangeEnc,
+						int(psEnc.sCmn.indices.signalType),
+						int(psEnc.sCmn.indices.quantOffsetType),
+						psEnc.sCmn.pulses[:],
+						psEnc.sCmn.frameLength,
+					)
 
 					nBits = int32(psRangeEnc.Tell())
 				}
 
 				if useCBR == 0 && iter == 0 && nBits <= int32(maxBits) {
-					break
+					break rateSearch
 				}
 			}
 
@@ -192,7 +233,7 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 					psEnc.sCmn.sNSQ = sNSQCopy[1]
 					psEnc.sShape.lastGainIndex = lastGainIndexCopy2
 				}
-				break
+				break rateSearch
 			}
 
 			if nBits > int32(maxBits) {
@@ -224,7 +265,7 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 				}
 			} else {
 				// Close enough.
-				break
+				break rateSearch
 			}
 
 			if foundLower == 0 && nBits > int32(maxBits) {
@@ -250,7 +291,9 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 				}
 			} else {
 				// Adjust gain by interpolating.
-				gainMultQ8 = int16(gainMultLower + ((gainMultUpper-gainMultLower)*(int32(maxBits)-nBitsLower))/(nBitsUpper-nBitsLower))
+				gainMultQ8 = int16(
+					gainMultLower + ((gainMultUpper-gainMultLower)*(int32(maxBits)-nBitsLower))/(nBitsUpper-nBitsLower),
+				)
 				// New gain multiplier must be between 25% and 75% of old range
 				// (note that gainMult_upper < gainMult_lower).
 				if int32(gainMultQ8) > addRshift32(gainMultLower, gainMultUpper-gainMultLower, 2) {
@@ -312,7 +355,12 @@ func (psEnc *encoderStateFLP) encodeFrameFLP(pnBytesOut *int32, psRangeEnc *entc
 // lbrrEncodeFLP is silk_LBRR_encode_FLP: Low-Bitrate Redundancy (LBRR)
 // encoding. Reuse all parameters but encode excitation at lower
 // bitrate. xfw[xOff] is the C xfw pointer.
-func (psEnc *encoderStateFLP) lbrrEncodeFLP(psEncCtrl *encoderControlFLP, xfw []float32, xOff int, condCoding int) {
+func (psEnc *encoderStateFLP) lbrrEncodeFLP(
+	psEncCtrl *encoderControlFLP,
+	xfw []float32,
+	xOff int,
+	condCoding int,
+) {
 	var (
 		gainsQ16  [maxNbSubfr]int32
 		tempGains [maxNbSubfr]float32
@@ -333,13 +381,18 @@ func (psEnc *encoderStateFLP) lbrrEncodeFLP(psEncCtrl *encoderControlFLP, xfw []
 		// Save original gains.
 		copy(tempGains[:psEnc.sCmn.nbSubfr], psEncCtrl.gains[:psEnc.sCmn.nbSubfr])
 
-		if psEnc.sCmn.nFramesEncoded == 0 || psEnc.sCmn.lbrrFlags[psEnc.sCmn.nFramesEncoded-1] == 0 {
+		if psEnc.sCmn.nFramesEncoded == 0 ||
+			psEnc.sCmn.lbrrFlags[psEnc.sCmn.nFramesEncoded-1] == 0 {
 			// First frame in packet or previous frame not LBRR coded.
 			psEnc.sCmn.lbrrPrevLastGainIndex = psEnc.sShape.lastGainIndex
 
 			// Increase Gains to get target LBRR rate.
-			psIndicesLBRR.gainsIndices[0] = int8(int(psIndicesLBRR.gainsIndices[0]) + psEnc.sCmn.lbrrGainIncreases)
-			psIndicesLBRR.gainsIndices[0] = int8(minInt(int(psIndicesLBRR.gainsIndices[0]), nLevelsQGain-1))
+			psIndicesLBRR.gainsIndices[0] = int8(
+				int(psIndicesLBRR.gainsIndices[0]) + psEnc.sCmn.lbrrGainIncreases,
+			)
+			psIndicesLBRR.gainsIndices[0] = int8(
+				minInt(int(psIndicesLBRR.gainsIndices[0]), nLevelsQGain-1),
+			)
 		}
 
 		// Decode to get gains in sync with decoder.
