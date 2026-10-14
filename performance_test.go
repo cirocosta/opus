@@ -13,12 +13,55 @@ type benchmarkConfig struct {
 }
 
 var benchmarkConfigs = []benchmarkConfig{
-	{name: "silk8_mono", rate: 8000, channels: 1, mode: ModeSilkOnly, bitrate: 12000, complexity: 10},
-	{name: "silk16_mono", rate: 16000, channels: 1, mode: ModeSilkOnly, bitrate: 20000, complexity: 10},
-	{name: "voip24_fec", rate: 24000, channels: 1, mode: Auto, bitrate: 24000, complexity: 9, fec: true},
-	{name: "hybrid48_stereo", rate: 48000, channels: 2, mode: ModeHybrid, bitrate: 48000, complexity: 10},
-	{name: "celt48_mono", rate: 48000, channels: 1, mode: ModeCeltOnly, bitrate: 64000, complexity: 10},
-	{name: "celt48_stereo", rate: 48000, channels: 2, mode: ModeCeltOnly, bitrate: 128000, complexity: 10},
+	{
+		name:       "silk8_mono",
+		rate:       8000,
+		channels:   1,
+		mode:       ModeSilkOnly,
+		bitrate:    12000,
+		complexity: 10,
+	},
+	{
+		name:       "silk16_mono",
+		rate:       16000,
+		channels:   1,
+		mode:       ModeSilkOnly,
+		bitrate:    20000,
+		complexity: 10,
+	},
+	{
+		name:       "voip24_fec",
+		rate:       24000,
+		channels:   1,
+		mode:       Auto,
+		bitrate:    24000,
+		complexity: 9,
+		fec:        true,
+	},
+	{
+		name:       "hybrid48_stereo",
+		rate:       48000,
+		channels:   2,
+		mode:       ModeHybrid,
+		bitrate:    48000,
+		complexity: 10,
+	},
+	{
+		name:       "celt48_mono",
+		rate:       48000,
+		channels:   1,
+		mode:       ModeCeltOnly,
+		bitrate:    64000,
+		complexity: 10,
+	},
+	{
+		name:       "celt48_stereo",
+		rate:       48000,
+		channels:   2,
+		mode:       ModeCeltOnly,
+		bitrate:    128000,
+		complexity: 10,
+	},
 }
 
 func benchmarkEncoder(b *testing.B, c benchmarkConfig) (*Encoder, [][]int16) {
