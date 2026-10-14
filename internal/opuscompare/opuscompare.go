@@ -43,15 +43,21 @@ func (r Result) String() string {
 		r.Quality, r.Error)
 }
 
+// keep the reference spectral quality metric and weighting order intact
+//
+//revive:disable-next-line:cognitive-complexity
 func bandEnergy(out, ps []float32, bnds []int, nb int, in []float32, nchannels int,
-	nframes, windowSz, step, downsample int) {
+	nframes, windowSz, step, downsample int,
+) {
 	window := make([]float32, windowSz)
 	c := make([]float32, windowSz)
 	s := make([]float32, windowSz)
 	x := make([]float32, nchannels*windowSz)
 	psSz := windowSz / 2
 	for xj := 0; xj < windowSz; xj++ {
-		window[xj] = 0.5 - float32(0.5*float32(math.Cos(float64((2*opusPi/float32(windowSz-1))*float32(xj)))))
+		window[xj] = 0.5 - float32(
+			0.5*float32(math.Cos(float64((2*opusPi/float32(windowSz-1))*float32(xj)))),
+		)
 	}
 	for xj := 0; xj < windowSz; xj++ {
 		c[xj] = float32(math.Cos(float64((2 * opusPi / float32(windowSz)) * float32(xj))))
@@ -101,14 +107,15 @@ func bandEnergy(out, ps []float32, bnds []int, nb int, in []float32, nchannels i
 // stereo 48 kHz, as in the .dec files), and test, the decoder output
 // with stereo (2) or mono (1) channels at rate Hz. It is
 // "opus_compare [-s] -r rate ref test".
+// keep the reference spectral quality metric and weighting order intact
+//
+//revive:disable-next-line:cognitive-complexity
 func Compare(ref, test []int16, stereo bool, rate int) (Result, error) {
 	nchannels := 1
 	if stereo {
 		nchannels = 2
 	}
 	ybands := nbands
-	yfreqs := nfreqs
-	downsample := 1
 	switch rate {
 	case 8000:
 		ybands = 13
@@ -120,10 +127,12 @@ func Compare(ref, test []int16, stereo bool, rate int) (Result, error) {
 		ybands = 19
 	case 48000:
 	default:
-		return Result{}, errors.New("opuscompare: sampling rate must be 8000, 12000, 16000, 24000, or 48000")
+		return Result{}, errors.New(
+			"opuscompare: sampling rate must be 8000, 12000, 16000, 24000, or 48000",
+		)
 	}
-	downsample = 48000 / rate
-	yfreqs = nfreqs / downsample
+	downsample := 48000 / rate
+	yfreqs := nfreqs / downsample
 
 	xlength := len(ref) / 2
 	x := make([]float32, len(ref))
@@ -175,7 +184,9 @@ func Compare(ref, test []int16, stereo bool, rate int) (Result, error) {
 			// Temporal masking: -3 dB/2.5ms slope.
 			for bi := 0; bi < nbands; bi++ {
 				for ci := 0; ci < nchannels; ci++ {
-					xb[(xi*nbands+bi)*nchannels+ci] += float32(0.5 * xb[((xi-1)*nbands+bi)*nchannels+ci])
+					xb[(xi*nbands+bi)*nchannels+ci] += float32(
+						0.5 * xb[((xi-1)*nbands+bi)*nchannels+ci],
+					)
 				}
 			}
 		}
