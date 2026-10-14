@@ -2,6 +2,8 @@
 
 package silk
 
+import "github.com/cirocosta/opus/internal/kernels"
+
 // nsqScratch holds the buffers that silk_NSQ and silk_NSQ_del_dec
 // allocate on the stack (ALLOC). They carry no state between calls.
 type nsqScratch struct {
@@ -32,29 +34,7 @@ type nsqParams struct {
 // silk_noise_shape_quantizer_short_prediction_c. buf32[p-j] is
 // buf32[ -j ] in C.
 func noiseShapeQuantizerShortPrediction(buf32 []int32, p int, coef16 []int16, order int) int32 {
-	// Avoids introducing a bias because silk_SMLAWB() always rounds to
-	// -inf.
-	out := int32(order >> 1)
-	out = smlawb(out, buf32[p-0], int32(coef16[0]))
-	out = smlawb(out, buf32[p-1], int32(coef16[1]))
-	out = smlawb(out, buf32[p-2], int32(coef16[2]))
-	out = smlawb(out, buf32[p-3], int32(coef16[3]))
-	out = smlawb(out, buf32[p-4], int32(coef16[4]))
-	out = smlawb(out, buf32[p-5], int32(coef16[5]))
-	out = smlawb(out, buf32[p-6], int32(coef16[6]))
-	out = smlawb(out, buf32[p-7], int32(coef16[7]))
-	out = smlawb(out, buf32[p-8], int32(coef16[8]))
-	out = smlawb(out, buf32[p-9], int32(coef16[9]))
-
-	if order == 16 {
-		out = smlawb(out, buf32[p-10], int32(coef16[10]))
-		out = smlawb(out, buf32[p-11], int32(coef16[11]))
-		out = smlawb(out, buf32[p-12], int32(coef16[12]))
-		out = smlawb(out, buf32[p-13], int32(coef16[13]))
-		out = smlawb(out, buf32[p-14], int32(coef16[14]))
-		out = smlawb(out, buf32[p-15], int32(coef16[15]))
-	}
-	return out
+	return kernels.Predict(buf32[:p+1], coef16, order)
 }
 
 // nsqNoiseShapeFeedbackLoop is silk_NSQ_noise_shape_feedback_loop_c.
@@ -82,8 +62,14 @@ func nsqNoiseShapeFeedbackLoop(data0 *int32, data1 []int32, coef []int16, order 
 }
 
 // nsq is silk_NSQ (silk_NSQ_c): noise shaping quantization.
-func (psEncC *encoderState) nsq(nsq *nsqState, psIndices *sideInfoIndices, x16 []int16, pulses []int8,
-	p *nsqParams, sc *nsqScratch) {
+func (psEncC *encoderState) nsq(
+	nsq *nsqState,
+	psIndices *sideInfoIndices,
+	x16 []int16,
+	pulses []int8,
+	p *nsqParams,
+	sc *nsqScratch,
+) {
 	nsq.randSeed = int32(psIndices.seed)
 
 	// Set unvoiced lag to the previous one, overwrite later for voiced.
@@ -132,12 +118,39 @@ func (psEncC *encoderState) nsq(nsq *nsqState, psIndices *sideInfoIndices, x16 [
 			}
 		}
 
-		psEncC.nsqScaleStates(nsq, x16[x16Off:], xScQ10, sLTP, sLTPQ15, k, p.ltpScaleQ14, &p.gainsQ16, &p.pitchL,
-			int(psIndices.signalType))
+		psEncC.nsqScaleStates(
+			nsq,
+			x16[x16Off:],
+			xScQ10,
+			sLTP,
+			sLTPQ15,
+			k,
+			p.ltpScaleQ14,
+			&p.gainsQ16,
+			&p.pitchL,
+			int(psIndices.signalType),
+		)
 
-		nsq.noiseShapeQuantizer(int(psIndices.signalType), xScQ10, pulses[pulsesOff:], nsq.xq[pxq:], sLTPQ15, aQ12, bQ14,
-			arShpQ13, lag, harmShapeFIRPackedQ14, p.tiltQ14[k], p.lfShpQ14[k], p.gainsQ16[k], p.lambdaQ10,
-			offsetQ10, psEncC.subfrLength, psEncC.shapingLPCOrder, psEncC.predictLPCOrder)
+		nsq.noiseShapeQuantizer(
+			int(psIndices.signalType),
+			xScQ10,
+			pulses[pulsesOff:],
+			nsq.xq[pxq:],
+			sLTPQ15,
+			aQ12,
+			bQ14,
+			arShpQ13,
+			lag,
+			harmShapeFIRPackedQ14,
+			p.tiltQ14[k],
+			p.lfShpQ14[k],
+			p.gainsQ16[k],
+			p.lambdaQ10,
+			offsetQ10,
+			psEncC.subfrLength,
+			psEncC.shapingLPCOrder,
+			psEncC.predictLPCOrder,
+		)
 
 		x16Off += psEncC.subfrLength
 		pulsesOff += psEncC.subfrLength
@@ -148,14 +161,30 @@ func (psEncC *encoderState) nsq(nsq *nsqState, psIndices *sideInfoIndices, x16 [
 	nsq.lagPrev = p.pitchL[psEncC.nbSubfr-1]
 
 	// Save quantized speech and noise shaping signals.
-	copy(nsq.xq[:psEncC.ltpMemLength], nsq.xq[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength])
-	copy(nsq.sLTPShpQ14[:psEncC.ltpMemLength], nsq.sLTPShpQ14[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength])
+	copy(
+		nsq.xq[:psEncC.ltpMemLength],
+		nsq.xq[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength],
+	)
+	copy(
+		nsq.sLTPShpQ14[:psEncC.ltpMemLength],
+		nsq.sLTPShpQ14[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength],
+	)
 }
 
 // noiseShapeQuantizer is silk_noise_shape_quantizer.
-func (nsq *nsqState) noiseShapeQuantizer(signalType int, xScQ10 []int32, pulses []int8, xq []int16, sLTPQ15 []int32,
-	aQ12, bQ14, arShpQ13 []int16, lag int, harmShapeFIRPackedQ14 int32, tiltQ14 int, lfShpQ14, gainQ16 int32,
-	lambdaQ10, offsetQ10, length, shapingLPCOrder, predictLPCOrder int) {
+func (nsq *nsqState) noiseShapeQuantizer(
+	signalType int,
+	xScQ10 []int32,
+	pulses []int8,
+	xq []int16,
+	sLTPQ15 []int32,
+	aQ12, bQ14, arShpQ13 []int16,
+	lag int,
+	harmShapeFIRPackedQ14 int32,
+	tiltQ14 int,
+	lfShpQ14, gainQ16 int32,
+	lambdaQ10, offsetQ10, length, shapingLPCOrder, predictLPCOrder int,
+) {
 	shpLag := nsq.sLTPShpBufIdx - lag + harmShapeFIRTaps/2
 	predLag := nsq.sLTPBufIdx - lag + ltpOrder/2
 	gainQ10 := gainQ16 >> 6
@@ -168,7 +197,12 @@ func (nsq *nsqState) noiseShapeQuantizer(signalType int, xScQ10 []int32, pulses 
 		nsq.randSeed = silkRAND(nsq.randSeed)
 
 		// Short-term prediction.
-		lpcPredQ10 := noiseShapeQuantizerShortPrediction(nsq.sLPCQ14[:], psLPCQ14, aQ12, predictLPCOrder)
+		lpcPredQ10 := noiseShapeQuantizerShortPrediction(
+			nsq.sLPCQ14[:],
+			psLPCQ14,
+			aQ12,
+			predictLPCOrder,
+		)
 
 		// Long-term prediction.
 		var ltpPredQ13 int32
@@ -188,7 +222,12 @@ func (nsq *nsqState) noiseShapeQuantizer(signalType int, xScQ10 []int32, pulses 
 		}
 
 		// Noise shape feedback.
-		nARQ12 := nsqNoiseShapeFeedbackLoop(&nsq.sDiffShpQ14, nsq.sAR2Q14[:], arShpQ13, shapingLPCOrder)
+		nARQ12 := nsqNoiseShapeFeedbackLoop(
+			&nsq.sDiffShpQ14,
+			nsq.sAR2Q14[:],
+			arShpQ13,
+			shapingLPCOrder,
+		)
 
 		nARQ12 = smlawb(nARQ12, nsq.sLFARShpQ14, int32(tiltQ14))
 
@@ -200,7 +239,10 @@ func (nsq *nsqState) noiseShapeQuantizer(signalType int, xScQ10 []int32, pulses 
 		tmp1 = sub32ovflw(tmp1, nLFQ12)                   // Q12
 		if lag > 0 {
 			// Symmetric, packed FIR coefficients.
-			nLTPQ13 := smulwb(addSat32(nsq.sLTPShpQ14[shpLag-0], nsq.sLTPShpQ14[shpLag-2]), harmShapeFIRPackedQ14)
+			nLTPQ13 := smulwb(
+				addSat32(nsq.sLTPShpQ14[shpLag-0], nsq.sLTPShpQ14[shpLag-2]),
+				harmShapeFIRPackedQ14,
+			)
 			nLTPQ13 = smlawt(nLTPQ13, nsq.sLTPShpQ14[shpLag-1], harmShapeFIRPackedQ14)
 			nLTPQ13 = lshift(nLTPQ13, 1)
 			shpLag++
@@ -306,8 +348,17 @@ func (nsq *nsqState) noiseShapeQuantizer(signalType int, xScQ10 []int32, pulses 
 }
 
 // nsqScaleStates is silk_nsq_scale_states.
-func (psEncC *encoderState) nsqScaleStates(nsq *nsqState, x16 []int16, xScQ10 []int32, sLTP []int16, sLTPQ15 []int32,
-	subfr, ltpScaleQ14 int, gainsQ16 *[maxNbSubfr]int32, pitchL *[maxNbSubfr]int, signalType int) {
+func (psEncC *encoderState) nsqScaleStates(
+	nsq *nsqState,
+	x16 []int16,
+	xScQ10 []int32,
+	sLTP []int16,
+	sLTPQ15 []int32,
+	subfr, ltpScaleQ14 int,
+	gainsQ16 *[maxNbSubfr]int32,
+	pitchL *[maxNbSubfr]int,
+	signalType int,
+) {
 	lag := pitchL[subfr]
 	invGainQ31 := inverse32VarQ(max32(gainsQ16[subfr], 1), 47)
 

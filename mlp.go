@@ -2,7 +2,10 @@
 
 package opus
 
-import "github.com/cirocosta/opus/internal/dsp"
+import (
+	"github.com/cirocosta/opus/internal/dsp"
+	"github.com/cirocosta/opus/internal/kernels"
+)
 
 const (
 	// weightsScale is WEIGHTS_SCALE.
@@ -53,11 +56,7 @@ func sigmoidApprox(x float32) float32 {
 
 // gemmAccum is gemm_accum.
 func gemmAccum(out []float32, weights []int8, rows, cols, colStride int, x []float32) {
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			out[i] += float32(float32(weights[j*colStride+i]) * x[j])
-		}
-	}
+	kernels.DenseAccum(out, weights, x, rows, cols, colStride)
 }
 
 // analysisComputeDense is analysis_compute_dense.

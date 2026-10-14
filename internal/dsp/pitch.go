@@ -6,6 +6,8 @@
 
 package dsp
 
+import "github.com/cirocosta/opus/internal/kernels"
+
 // pitchStackMax bounds the stack scratch buffers of the pitch search.
 // Larger sizes fall back to the heap.
 const pitchStackMax = 1032
@@ -13,84 +15,7 @@ const pitchStackMax = 1032
 // XcorrKernel is xcorr_kernel_c: sum[k] += x[j]*y[j+k] for k in [0, 4)
 // and j in [0, n). n must be at least 3; y must hold n+3 values.
 func XcorrKernel(x, y []float32, sum *[4]float32, n int) {
-	x = x[:n]
-	y = y[:n+3]
-	var y0, y1, y2, y3 float32
-	yi := 0
-	y0 = y[yi]
-	yi++
-	y1 = y[yi]
-	yi++
-	y2 = y[yi]
-	yi++
-	s0, s1, s2, s3 := sum[0], sum[1], sum[2], sum[3]
-	j := 0
-	for ; j < n-3; j += 4 {
-		tmp := x[j]
-		y3 = y[yi]
-		yi++
-		s0 = s0 + float32(tmp*y0)
-		s1 = s1 + float32(tmp*y1)
-		s2 = s2 + float32(tmp*y2)
-		s3 = s3 + float32(tmp*y3)
-		tmp = x[j+1]
-		y0 = y[yi]
-		yi++
-		s0 = s0 + float32(tmp*y1)
-		s1 = s1 + float32(tmp*y2)
-		s2 = s2 + float32(tmp*y3)
-		s3 = s3 + float32(tmp*y0)
-		tmp = x[j+2]
-		y1 = y[yi]
-		yi++
-		s0 = s0 + float32(tmp*y2)
-		s1 = s1 + float32(tmp*y3)
-		s2 = s2 + float32(tmp*y0)
-		s3 = s3 + float32(tmp*y1)
-		tmp = x[j+3]
-		y2 = y[yi]
-		yi++
-		s0 = s0 + float32(tmp*y3)
-		s1 = s1 + float32(tmp*y0)
-		s2 = s2 + float32(tmp*y1)
-		s3 = s3 + float32(tmp*y2)
-	}
-	xi := j
-	if j < n {
-		j++
-		tmp := x[xi]
-		xi++
-		y3 = y[yi]
-		yi++
-		s0 = s0 + float32(tmp*y0)
-		s1 = s1 + float32(tmp*y1)
-		s2 = s2 + float32(tmp*y2)
-		s3 = s3 + float32(tmp*y3)
-	} else {
-		j++
-	}
-	if j < n {
-		j++
-		tmp := x[xi]
-		xi++
-		y0 = y[yi]
-		yi++
-		s0 = s0 + float32(tmp*y1)
-		s1 = s1 + float32(tmp*y2)
-		s2 = s2 + float32(tmp*y3)
-		s3 = s3 + float32(tmp*y0)
-	} else {
-		j++
-	}
-	if j < n {
-		tmp := x[xi]
-		y1 = y[yi]
-		s0 = s0 + float32(tmp*y2)
-		s1 = s1 + float32(tmp*y3)
-		s2 = s2 + float32(tmp*y0)
-		s3 = s3 + float32(tmp*y1)
-	}
-	sum[0], sum[1], sum[2], sum[3] = s0, s1, s2, s3
+	kernels.Xcorr4(x, y, sum, n)
 }
 
 // DualInnerProd is dual_inner_prod_c: it returns the inner products of the
@@ -122,19 +47,7 @@ func CeltInnerProd(x, y []float32, n int) float32 {
 // CeltPitchXcorr is celt_pitch_xcorr_c (the unrolled version):
 // xcorr[i] = sum(x[j]*y[i+j]) for i in [0, maxPitch) and j in [0, n).
 func CeltPitchXcorr(x, y []float32, xcorr []float32, n, maxPitch int) {
-	i := 0
-	for ; i < maxPitch-3; i += 4 {
-		var sum [4]float32
-		XcorrKernel(x, y[i:], &sum, n)
-		xcorr[i] = sum[0]
-		xcorr[i+1] = sum[1]
-		xcorr[i+2] = sum[2]
-		xcorr[i+3] = sum[3]
-	}
-	// In case max_pitch isn't a multiple of 4, do non-unrolled version.
-	for ; i < maxPitch; i++ {
-		xcorr[i] = CeltInnerProd(x, y[i:], n)
-	}
+	kernels.CrossCorrelation(x, y, xcorr, n, maxPitch)
 }
 
 // findBestPitch is find_best_pitch.
@@ -215,13 +128,25 @@ func PitchDownsample(x [][]float32, xLp []float32, n, c, factor int) {
 	offset := factor / 2
 	x0 := x[0]
 	for i := 1; i < n; i++ {
-		xLp[i] = float32(.25*x0[factor*i-offset]) + float32(.25*x0[factor*i+offset]) + float32(.5*x0[factor*i])
+		xLp[i] = float32(
+			.25*x0[factor*i-offset],
+		) + float32(
+			.25*x0[factor*i+offset],
+		) + float32(
+			.5*x0[factor*i],
+		)
 	}
 	xLp[0] = float32(.25*x0[offset]) + float32(.5*x0[0])
 	if c == 2 {
 		x1 := x[1]
 		for i := 1; i < n; i++ {
-			xLp[i] += float32(.25*x1[factor*i-offset]) + float32(.25*x1[factor*i+offset]) + float32(.5*x1[factor*i])
+			xLp[i] += float32(
+				.25*x1[factor*i-offset],
+			) + float32(
+				.25*x1[factor*i+offset],
+			) + float32(
+				.5*x1[factor*i],
+			)
 		}
 		xLp[0] += float32(.25*x1[offset]) + float32(.5*x1[0])
 	}
@@ -253,7 +178,7 @@ func PitchDownsample(x [][]float32, xLp []float32, n, c, factor int) {
 // PitchSearch is pitch_search: it returns the pitch period (in samples of
 // xLp) that best matches xLp (n values) within y (n+maxPitch values).
 func PitchSearch(xLp []float32, y []float32, n, maxPitch int) int {
-	var bestPitch = [2]int{0, 0}
+	bestPitch := [2]int{0, 0}
 	lag := n + maxPitch
 
 	var xLp4Buf, yLp4Buf, xcorrBuf [pitchStackMax]float32
@@ -327,7 +252,13 @@ var secondCheck = [16]int{0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2}
 // RemoveDoubling is remove_doubling: it checks the pitch *t0 for period
 // doubling and returns the pitch gain. x holds maxperiod history samples
 // followed by n samples. *t0 is updated in place.
-func RemoveDoubling(x []float32, maxperiod, minperiod, n int, t0 *int, prevPeriod int, prevGain float32) float32 {
+func RemoveDoubling(
+	x []float32,
+	maxperiod, minperiod, n int,
+	t0 *int,
+	prevPeriod int,
+	prevGain float32,
+) float32 {
 	minperiod0 := minperiod
 	maxperiod /= 2
 	minperiod /= 2

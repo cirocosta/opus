@@ -15,7 +15,7 @@ func smulwb(a32, b32 int32) int32 {
 
 // smlawb is silk_SMLAWB: a32 + ((b32 * (int16)c32) >> 16).
 func smlawb(a32, b32, c32 int32) int32 {
-	return int32(int64(a32) + ((int64(b32) * int64(int16(c32))) >> 16))
+	return a32 + smulwb(b32, c32)
 }
 
 // smulwt is silk_SMULWT: (a32 * (b32 >> 16)) >> 16.
@@ -25,7 +25,7 @@ func smulwt(a32, b32 int32) int32 {
 
 // smlawt is silk_SMLAWT: a32 + ((b32 * (c32 >> 16)) >> 16).
 func smlawt(a32, b32, c32 int32) int32 {
-	return int32(int64(a32) + ((int64(b32) * (int64(c32) >> 16)) >> 16))
+	return a32 + smulwt(b32, c32)
 }
 
 // smulbb is silk_SMULBB: (int16)a32 * (int16)b32.
@@ -38,21 +38,6 @@ func smlabb(a32, b32, c32 int32) int32 {
 	return a32 + int32(int16(b32))*int32(int16(c32))
 }
 
-// smulbt is silk_SMULBT: (int16)a32 * (b32 >> 16).
-func smulbt(a32, b32 int32) int32 {
-	return int32(int16(a32)) * (b32 >> 16)
-}
-
-// smlabt is silk_SMLABT: a32 + (int16)b32 * (c32 >> 16).
-func smlabt(a32, b32, c32 int32) int32 {
-	return a32 + int32(int16(b32))*(c32>>16)
-}
-
-// smlal is silk_SMLAL: a64 + b32 * c32.
-func smlal(a64 int64, b32, c32 int32) int64 {
-	return a64 + int64(b32)*int64(c32)
-}
-
 // smulww is silk_SMULWW: (a32 * b32) >> 16.
 func smulww(a32, b32 int32) int32 {
 	return int32((int64(a32) * int64(b32)) >> 16)
@@ -60,7 +45,7 @@ func smulww(a32, b32 int32) int32 {
 
 // smlaww is silk_SMLAWW: a32 + ((b32 * c32) >> 16).
 func smlaww(a32, b32, c32 int32) int32 {
-	return int32(int64(a32) + ((int64(b32) * int64(c32)) >> 16))
+	return a32 + smulww(b32, c32)
 }
 
 // Add/subtract with output saturated.
@@ -93,11 +78,6 @@ func subSat32(a, b int32) int32 {
 		return int32MAX
 	}
 	return s
-}
-
-// clz16 is silk_CLZ16.
-func clz16(in16 int16) int32 {
-	return int32(bits.LeadingZeros32(uint32(int32(in16))<<16 | 0x8000))
 }
 
 // clz32 is silk_CLZ32.

@@ -2,6 +2,8 @@
 
 package silk
 
+import "github.com/cirocosta/opus/internal/kernels"
+
 // decodeCore is silk_decode_core: core decoder. Performs inverse NSQ
 // operation LTP + LPC.
 func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pulses []int16) {
@@ -13,7 +15,9 @@ func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pul
 	resQ14 := psDec.scratch.resQ14[:psDec.subfrLength]
 	sLPCQ14 := psDec.scratch.sLPCQ14[:psDec.subfrLength+maxLPCOrder]
 
-	offsetQ10 := int32(quantizationOffsetsQ10[psDec.indices.signalType>>1][psDec.indices.quantOffsetType])
+	offsetQ10 := int32(
+		quantizationOffsetsQ10[psDec.indices.signalType>>1][psDec.indices.quantOffsetType],
+	)
 
 	nlsfInterpolationFlag := psDec.indices.nlsfInterpCoefQ2 < 1<<2
 
@@ -94,7 +98,10 @@ func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pul
 				startIdx := psDec.ltpMemLength - lag - psDec.lpcOrder - ltpOrder/2
 
 				if k == 2 {
-					copy(psDec.outBuf[psDec.ltpMemLength:psDec.ltpMemLength+2*psDec.subfrLength], xq[:2*psDec.subfrLength])
+					copy(
+						psDec.outBuf[psDec.ltpMemLength:psDec.ltpMemLength+2*psDec.subfrLength],
+						xq[:2*psDec.subfrLength],
+					)
 				}
 
 				lpcAnalysisFilter(sLTP[startIdx:], psDec.outBuf[startIdx+k*psDec.subfrLength:],
@@ -106,7 +113,10 @@ func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pul
 					invGainQ31 = lshift(smulwb(invGainQ31, int32(psDecCtrl.ltpScaleQ14)), 2)
 				}
 				for i := 0; i < lag+ltpOrder/2; i++ {
-					sLTPQ15[sLTPBufIdx-i-1] = smulwb(invGainQ31, int32(sLTP[psDec.ltpMemLength-i-1]))
+					sLTPQ15[sLTPBufIdx-i-1] = smulwb(
+						invGainQ31,
+						int32(sLTP[psDec.ltpMemLength-i-1]),
+					)
 				}
 			} else {
 				// Update LTP state when Gain changes.
@@ -145,36 +155,14 @@ func (psDec *decoderState) decodeCore(psDecCtrl *decoderControl, xq []int16, pul
 			presQ14 = pexcQ14
 		}
 
-		for i := 0; i < psDec.subfrLength; i++ {
-			// Short-term prediction.
-			// Avoids introducing a bias because silk_SMLAWB() always
-			// rounds to -inf.
-			lpcPredQ10 := int32(psDec.lpcOrder >> 1)
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-1], int32(aQ12Tmp[0]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-2], int32(aQ12Tmp[1]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-3], int32(aQ12Tmp[2]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-4], int32(aQ12Tmp[3]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-5], int32(aQ12Tmp[4]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-6], int32(aQ12Tmp[5]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-7], int32(aQ12Tmp[6]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-8], int32(aQ12Tmp[7]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-9], int32(aQ12Tmp[8]))
-			lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-10], int32(aQ12Tmp[9]))
-			if psDec.lpcOrder == 16 {
-				lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-11], int32(aQ12Tmp[10]))
-				lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-12], int32(aQ12Tmp[11]))
-				lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-13], int32(aQ12Tmp[12]))
-				lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-14], int32(aQ12Tmp[13]))
-				lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-15], int32(aQ12Tmp[14]))
-				lpcPredQ10 = smlawb(lpcPredQ10, sLPCQ14[maxLPCOrder+i-16], int32(aQ12Tmp[15]))
-			}
-
-			// Add prediction to LPC excitation.
-			sLPCQ14[maxLPCOrder+i] = addSat32(presQ14[i], lshiftSat32(lpcPredQ10, 4))
-
-			// Scale with gain.
-			pxq[i] = int16(sat16(rshiftRound(smulww(sLPCQ14[maxLPCOrder+i], gainQ10), 8)))
-		}
+		kernels.Synthesize(
+			sLPCQ14,
+			presQ14,
+			aQ12Tmp[:],
+			gainQ10,
+			pxq[:psDec.subfrLength],
+			psDec.lpcOrder,
+		)
 
 		// Update LPC filter state.
 		copy(sLPCQ14[:maxLPCOrder], sLPCQ14[psDec.subfrLength:psDec.subfrLength+maxLPCOrder])

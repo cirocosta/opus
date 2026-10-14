@@ -2,11 +2,11 @@
 
 package silk
 
-// nsqDelDecStruct is NSQ_del_dec_struct. The C code copies the struct
-// from the i-th 32-bit word on (memcpy at an offset of i words, i <
-// MAX_SUB_FRAME_LENGTH), which only skips the start of sLPC_Q14; the
-// remaining fields are in nsqDelDecRest so that copyFrom can do the
-// same.
+import "github.com/cirocosta/opus/internal/kernels"
+
+// nsqDelDecStruct holds one delayed-decision branch's LPC history and
+// noise-shaping state. Predictor history and ring state are copied separately
+// when a surviving branch replaces another branch.
 type nsqDelDecStruct struct {
 	sLPCQ14 [maxSubFrameLength + nsqLPCBufLength]int32
 	nsqDelDecRest
@@ -27,10 +27,12 @@ type nsqDelDecRest struct {
 	rdQ10     int32
 }
 
-// copyFrom is silk_memcpy( ( (opus_int32 *)dst ) + i, ( (opus_int32
-// *)src ) + i, sizeof( NSQ_del_dec_struct ) - i * sizeof( opus_int32 ) ).
+// copyFrom copies the live predictor window and delayed-decision state.
+// i identifies the first history sample needed for the next prediction.
 func (d *nsqDelDecStruct) copyFrom(s *nsqDelDecStruct, i int) {
-	copy(d.sLPCQ14[i:], s.sLPCQ14[i:])
+	// only the preceding 16 samples are live; the current and future
+	// slots are written before any prediction can read them.
+	copy(d.sLPCQ14[i:i+nsqLPCBufLength], s.sLPCQ14[i:i+nsqLPCBufLength])
 	d.nsqDelDecRest = s.nsqDelDecRest
 }
 
@@ -47,8 +49,14 @@ type nsqSampleStruct struct {
 
 // nsqDelDec is silk_NSQ_del_dec (silk_NSQ_del_dec_c): noise shaping
 // quantization with delayed decision.
-func (psEncC *encoderState) nsqDelDec(nsq *nsqState, psIndices *sideInfoIndices, x16 []int16, pulses []int8,
-	p *nsqParams, sc *nsqScratch) {
+func (psEncC *encoderState) nsqDelDec(
+	nsq *nsqState,
+	psIndices *sideInfoIndices,
+	x16 []int16,
+	pulses []int8,
+	p *nsqParams,
+	sc *nsqScratch,
+) {
 	// Set unvoiced lag to the previous one, overwrite later for voiced.
 	lag := nsq.lagPrev
 
@@ -138,13 +146,15 @@ func (psEncC *encoderState) nsqDelDec(nsq *nsqState, psIndices *sideInfoIndices,
 					// Copy final part of signals from winner state to
 					// output and long-term filter states.
 					psDD := &psDelDec[winnerInd]
-					lastSmpleIdx := smplBufIdx + decDelay
+					lastSmpleIdx := (smplBufIdx + decDelay) % decisionDelay
 					for i := 0; i < decDelay; i++ {
-						lastSmpleIdx = (lastSmpleIdx - 1) % decisionDelay
+						lastSmpleIdx--
 						if lastSmpleIdx < 0 {
 							lastSmpleIdx += decisionDelay
 						}
-						pulses[pulsesOff+i-decDelay] = int8(rshiftRound(psDD.qQ10[lastSmpleIdx], 10))
+						pulses[pulsesOff+i-decDelay] = int8(
+							rshiftRound(psDD.qQ10[lastSmpleIdx], 10),
+						)
 						nsq.xq[pxq+i-decDelay] = int16(sat16(rshiftRound(
 							smulww(psDD.xqQ14[lastSmpleIdx], p.gainsQ16[1]), 14)))
 						nsq.sLTPShpQ14[nsq.sLTPShpBufIdx-decDelay+i] = psDD.shapeQ14[lastSmpleIdx]
@@ -164,14 +174,51 @@ func (psEncC *encoderState) nsqDelDec(nsq *nsqState, psIndices *sideInfoIndices,
 			}
 		}
 
-		psEncC.nsqDelDecScaleStates(nsq, psDelDec, x16[x16Off:], xScQ10, sLTP, sLTPQ15, k,
-			psEncC.nStatesDelayedDecision, p.ltpScaleQ14, &p.gainsQ16, &p.pitchL, int(psIndices.signalType), decDelay)
+		psEncC.nsqDelDecScaleStates(
+			nsq,
+			psDelDec,
+			x16[x16Off:],
+			xScQ10,
+			sLTP,
+			sLTPQ15,
+			k,
+			psEncC.nStatesDelayedDecision,
+			p.ltpScaleQ14,
+			&p.gainsQ16,
+			&p.pitchL,
+			int(psIndices.signalType),
+			decDelay,
+		)
 
-		nsq.noiseShapeQuantizerDelDec(psDelDec, int(psIndices.signalType), xScQ10, pulses, pulsesOff, pxq, sLTPQ15,
-			delayedGainQ10, aQ12, bQ14, arShpQ13, lag, harmShapeFIRPackedQ14, p.tiltQ14[k], p.lfShpQ14[k],
-			p.gainsQ16[k], p.lambdaQ10, offsetQ10, psEncC.subfrLength, subfr, psEncC.shapingLPCOrder,
-			psEncC.predictLPCOrder, psEncC.warpingQ16, psEncC.nStatesDelayedDecision, &smplBufIdx, decDelay,
-			&sc.psSampleState)
+		nsq.noiseShapeQuantizerDelDec(
+			psDelDec,
+			int(psIndices.signalType),
+			xScQ10,
+			pulses,
+			pulsesOff,
+			pxq,
+			sLTPQ15,
+			delayedGainQ10,
+			aQ12,
+			bQ14,
+			arShpQ13,
+			lag,
+			harmShapeFIRPackedQ14,
+			p.tiltQ14[k],
+			p.lfShpQ14[k],
+			p.gainsQ16[k],
+			p.lambdaQ10,
+			offsetQ10,
+			psEncC.subfrLength,
+			subfr,
+			psEncC.shapingLPCOrder,
+			psEncC.predictLPCOrder,
+			psEncC.warpingQ16,
+			psEncC.nStatesDelayedDecision,
+			&smplBufIdx,
+			decDelay,
+			&sc.psSampleState,
+		)
 		subfr++
 
 		x16Off += psEncC.subfrLength
@@ -193,10 +240,10 @@ func (psEncC *encoderState) nsqDelDec(nsq *nsqState, psIndices *sideInfoIndices,
 	// long-term filter states.
 	psDD := &psDelDec[winnerInd]
 	psIndices.seed = int8(psDD.seedInit)
-	lastSmpleIdx := smplBufIdx + decDelay
+	lastSmpleIdx := (smplBufIdx + decDelay) % decisionDelay
 	gainQ10 := p.gainsQ16[psEncC.nbSubfr-1] >> 6
 	for i := 0; i < decDelay; i++ {
-		lastSmpleIdx = (lastSmpleIdx - 1) % decisionDelay
+		lastSmpleIdx--
 		if lastSmpleIdx < 0 {
 			lastSmpleIdx += decisionDelay
 		}
@@ -206,7 +253,10 @@ func (psEncC *encoderState) nsqDelDec(nsq *nsqState, psIndices *sideInfoIndices,
 			smulww(psDD.xqQ14[lastSmpleIdx], gainQ10), 8)))
 		nsq.sLTPShpQ14[nsq.sLTPShpBufIdx-decDelay+i] = psDD.shapeQ14[lastSmpleIdx]
 	}
-	copy(nsq.sLPCQ14[:nsqLPCBufLength], psDD.sLPCQ14[psEncC.subfrLength:psEncC.subfrLength+nsqLPCBufLength])
+	copy(
+		nsq.sLPCQ14[:nsqLPCBufLength],
+		psDD.sLPCQ14[psEncC.subfrLength:psEncC.subfrLength+nsqLPCBufLength],
+	)
 	nsq.sAR2Q14 = psDD.sAR2Q14
 
 	// Update states.
@@ -215,18 +265,38 @@ func (psEncC *encoderState) nsqDelDec(nsq *nsqState, psIndices *sideInfoIndices,
 	nsq.lagPrev = p.pitchL[psEncC.nbSubfr-1]
 
 	// Save quantized speech signal.
-	copy(nsq.xq[:psEncC.ltpMemLength], nsq.xq[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength])
-	copy(nsq.sLTPShpQ14[:psEncC.ltpMemLength], nsq.sLTPShpQ14[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength])
+	copy(
+		nsq.xq[:psEncC.ltpMemLength],
+		nsq.xq[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength],
+	)
+	copy(
+		nsq.sLTPShpQ14[:psEncC.ltpMemLength],
+		nsq.sLTPShpQ14[psEncC.frameLength:psEncC.frameLength+psEncC.ltpMemLength],
+	)
 }
 
 // noiseShapeQuantizerDelDec is silk_noise_shape_quantizer_del_dec: noise
 // shape quantizer for one subframe. pulses[pulsesOff+i] and
 // nsq.xq[xqOff+i] are pulses[ i ] and xq[ i ] in C.
-func (nsq *nsqState) noiseShapeQuantizerDelDec(psDelDec []nsqDelDecStruct, signalType int, xQ10 []int32,
-	pulses []int8, pulsesOff, xqOff int, sLTPQ15 []int32, delayedGainQ10 []int32, aQ12, bQ14, arShpQ13 []int16,
-	lag int, harmShapeFIRPackedQ14 int32, tiltQ14 int, lfShpQ14, gainQ16 int32, lambdaQ10, offsetQ10, length,
-	subfr, shapingLPCOrder, predictLPCOrder, warpingQ16, nStatesDelayedDecision int, smplBufIdx *int,
-	decDelay int, psSampleState *[maxDelDecStates][2]nsqSampleStruct) {
+func (nsq *nsqState) noiseShapeQuantizerDelDec(
+	psDelDec []nsqDelDecStruct,
+	signalType int,
+	xQ10 []int32,
+	pulses []int8,
+	pulsesOff, xqOff int,
+	sLTPQ15 []int32,
+	delayedGainQ10 []int32,
+	aQ12, bQ14, arShpQ13 []int16,
+	lag int,
+	harmShapeFIRPackedQ14 int32,
+	tiltQ14 int,
+	lfShpQ14, gainQ16 int32,
+	lambdaQ10, offsetQ10, length,
+	subfr, shapingLPCOrder, predictLPCOrder, warpingQ16, nStatesDelayedDecision int,
+	smplBufIdx *int,
+	decDelay int,
+	psSampleState *[maxDelDecStates][2]nsqSampleStruct,
+) {
 	shpLag := nsq.sLTPShpBufIdx - lag + harmShapeFIRTaps/2
 	predLag := nsq.sLTPBufIdx - lag + ltpOrder/2
 	gainQ10 := gainQ16 >> 6
@@ -256,7 +326,10 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(psDelDec []nsqDelDecStruct, signa
 		var nLTPQ14 int32
 		if lag > 0 {
 			// Symmetric, packed FIR coefficients.
-			nLTPQ14 = smulwb(addSat32(nsq.sLTPShpQ14[shpLag-0], nsq.sLTPShpQ14[shpLag-2]), harmShapeFIRPackedQ14)
+			nLTPQ14 = smulwb(
+				addSat32(nsq.sLTPShpQ14[shpLag-0], nsq.sLTPShpQ14[shpLag-2]),
+				harmShapeFIRPackedQ14,
+			)
 			nLTPQ14 = smlawt(nLTPQ14, nsq.sLTPShpQ14[shpLag-1], harmShapeFIRPackedQ14)
 			nLTPQ14 = subLshift32(ltpPredQ14, nLTPQ14, 2) // Q12 -> Q14
 			shpLag++
@@ -277,30 +350,16 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(psDelDec []nsqDelDecStruct, signa
 			// Pointer used in short term prediction and shaping.
 			psLPCQ14 := nsqLPCBufLength - 1 + i
 			// Short-term prediction.
-			lpcPredQ14 := noiseShapeQuantizerShortPrediction(psDD.sLPCQ14[:], psLPCQ14, aQ12, predictLPCOrder)
+			lpcPredQ14 := noiseShapeQuantizerShortPrediction(
+				psDD.sLPCQ14[:],
+				psLPCQ14,
+				aQ12,
+				predictLPCOrder,
+			)
 			lpcPredQ14 = lshift(lpcPredQ14, 4) // Q10 -> Q14
 
-			// Noise shape feedback.
-			// Output of lowpass section.
-			tmp2 := smlawb(psDD.diffQ14, psDD.sAR2Q14[0], int32(warpingQ16))
-			// Output of allpass section.
-			tmp1 := smlawb(psDD.sAR2Q14[0], sub32ovflw(psDD.sAR2Q14[1], tmp2), int32(warpingQ16))
-			psDD.sAR2Q14[0] = tmp2
-			nARQ14 := int32(shapingLPCOrder >> 1)
-			nARQ14 = smlawb(nARQ14, tmp2, int32(arShpQ13[0]))
-			// Loop over allpass sections.
-			for j := 2; j < shapingLPCOrder; j += 2 {
-				// Output of allpass section.
-				tmp2 = smlawb(psDD.sAR2Q14[j-1], sub32ovflw(psDD.sAR2Q14[j+0], tmp1), int32(warpingQ16))
-				psDD.sAR2Q14[j-1] = tmp1
-				nARQ14 = smlawb(nARQ14, tmp1, int32(arShpQ13[j-1]))
-				// Output of allpass section.
-				tmp1 = smlawb(psDD.sAR2Q14[j+0], sub32ovflw(psDD.sAR2Q14[j+1], tmp2), int32(warpingQ16))
-				psDD.sAR2Q14[j+0] = tmp2
-				nARQ14 = smlawb(nARQ14, tmp2, int32(arShpQ13[j]))
-			}
-			psDD.sAR2Q14[shapingLPCOrder-1] = tmp1
-			nARQ14 = smlawb(nARQ14, tmp1, int32(arShpQ13[shapingLPCOrder-1]))
+			// Preserve the ordered allpass chain and each fixed-point wrap.
+			nARQ14 := kernels.WarpedFeedback(psDD.sAR2Q14[:], arShpQ13[:shapingLPCOrder], psDD.diffQ14, int32(warpingQ16))
 
 			nARQ14 = lshift(nARQ14, 1)                            // Q11 -> Q12
 			nARQ14 = smlawb(nARQ14, psDD.lfARQ14, int32(tiltQ14)) // Q12
@@ -312,10 +371,10 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(psDelDec []nsqDelDecStruct, signa
 
 			// Input minus prediction plus noise feedback.
 			// r = x[ i ] - LTP_pred - LPC_pred + n_AR + n_Tilt + n_LF + n_LTP.
-			tmp1 = addSat32(nARQ14, nLFQ14)        // Q14
-			tmp2 = add32ovflw(nLTPQ14, lpcPredQ14) // Q13
-			tmp1 = subSat32(tmp2, tmp1)            // Q13
-			tmp1 = rshiftRound(tmp1, 4)            // Q10
+			tmp1 := addSat32(nARQ14, nLFQ14)        // Q14
+			tmp2 := add32ovflw(nLTPQ14, lpcPredQ14) // Q13
+			tmp1 = subSat32(tmp2, tmp1)             // Q13
+			tmp1 = rshiftRound(tmp1, 4)             // Q10
 
 			rQ10 := xQ10[i] - tmp1 // residual error Q10
 
@@ -424,11 +483,14 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(psDelDec []nsqDelDecStruct, signa
 			psSS[1].xqQ14 = xqQ14
 		}
 
-		*smplBufIdx = (*smplBufIdx - 1) % decisionDelay
+		*smplBufIdx--
 		if *smplBufIdx < 0 {
 			*smplBufIdx += decisionDelay
 		}
-		lastSmpleIdx := (*smplBufIdx + decDelay) % decisionDelay
+		lastSmpleIdx := *smplBufIdx + decDelay
+		if lastSmpleIdx >= decisionDelay {
+			lastSmpleIdx -= decisionDelay
+		}
 
 		// Find winner.
 		rdMinQ10 := psSampleState[0][0].rdQ10
@@ -511,9 +573,18 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(psDelDec []nsqDelDecStruct, signa
 }
 
 // nsqDelDecScaleStates is silk_nsq_del_dec_scale_states.
-func (psEncC *encoderState) nsqDelDecScaleStates(nsq *nsqState, psDelDec []nsqDelDecStruct, x16 []int16,
-	xScQ10 []int32, sLTP []int16, sLTPQ15 []int32, subfr, nStatesDelayedDecision, ltpScaleQ14 int,
-	gainsQ16 *[maxNbSubfr]int32, pitchL *[maxNbSubfr]int, signalType, decDelay int) {
+func (psEncC *encoderState) nsqDelDecScaleStates(
+	nsq *nsqState,
+	psDelDec []nsqDelDecStruct,
+	x16 []int16,
+	xScQ10 []int32,
+	sLTP []int16,
+	sLTPQ15 []int32,
+	subfr, nStatesDelayedDecision, ltpScaleQ14 int,
+	gainsQ16 *[maxNbSubfr]int32,
+	pitchL *[maxNbSubfr]int,
+	signalType, decDelay int,
+) {
 	lag := pitchL[subfr]
 	invGainQ31 := inverse32VarQ(max32(gainsQ16[subfr], 1), 47)
 
