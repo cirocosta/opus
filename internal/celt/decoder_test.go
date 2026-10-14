@@ -180,6 +180,10 @@ func TestRotationRecurrence(t *testing.T) {
 			expRotation1(got, length, 1, pair[0], pair[1])
 			expRotation1Generic(want, length, 1, pair[0], pair[1])
 			for i := range got {
+				// NaN payload selection can differ when the compiler commutes operands.
+				if math.IsNaN(float64(got[i])) && math.IsNaN(float64(want[i])) {
+					continue
+				}
 				if math.Float32bits(got[i]) != math.Float32bits(want[i]) {
 					t.Fatalf(
 						"length %d, coefficients %v, sample %d: got %08x, want %08x",
