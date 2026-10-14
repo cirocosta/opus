@@ -11,6 +11,7 @@ package dsp
 import (
 	"encoding/binary"
 	"math"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -562,4 +563,55 @@ func testMath(t *testing.T, file string, log2, exp2 func(float32) float32, libmU
 	sf.check(t, 0)
 	sq.check(t, 0)
 	sm.check(t, 0)
+}
+
+func TestFFT5Backend(t *testing.T) {
+	rng := rand.New(rand.NewPCG(91, 701))
+	for _, st := range []*KissFFTState{
+		&FFTState48000_960_0, &FFTState48000_960_1,
+		&FFTState48000_960_2, &FFTState48000_960_3,
+	} {
+		m := st.Nfft / 5
+		stride := 1 << max(st.Shift, 0)
+		generic := *st
+		generic.fft5 = nil
+		for trial := 0; trial < 300; trial++ {
+			for alignment := 0; alignment < 4; alignment++ {
+				storage := make([]KissFFTCpx, st.Nfft+alignment+1)
+				got := storage[alignment : alignment+st.Nfft]
+				want := make([]KissFFTCpx, st.Nfft)
+				for i := range got {
+					// include zeros, subnormals and large finite values without overflow.
+					got[i] = KissFFTCpx{
+						R: math.Float32frombits(rng.Uint32() & 0xfcffffff),
+						I: math.Float32frombits(rng.Uint32() & 0xfcffffff),
+					}
+					if trial == 0 {
+						got[i] = KissFFTCpx{R: math.Float32frombits(uint32(i&1) << 31)}
+					}
+				}
+				copy(want, got)
+				storage[len(storage)-1] = KissFFTCpx{R: 19, I: 23}
+				kfBfly5(got, stride, st, m, 1, 1)
+				kfBfly5(want, stride, &generic, m, 1, 1)
+				for i := range got {
+					if math.Float32bits(got[i].R) != math.Float32bits(want[i].R) ||
+						math.Float32bits(got[i].I) != math.Float32bits(want[i].I) {
+						t.Fatalf(
+							"FFT %d, trial %d, alignment %d, sample %d: got %v, want %v",
+							st.Nfft,
+							trial,
+							alignment,
+							i,
+							got[i],
+							want[i],
+						)
+					}
+				}
+				if storage[len(storage)-1] != (KissFFTCpx{R: 19, I: 23}) {
+					t.Fatal("FFT5 exceeded its output buffer")
+				}
+			}
+		}
+	}
 }

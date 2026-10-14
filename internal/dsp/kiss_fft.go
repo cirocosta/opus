@@ -19,6 +19,7 @@ type KissTwiddleCpx struct {
 // KissFFTState is kiss_fft_state. The states of the static modes are
 // precomputed (see static_modes.go). A state with Shift > 0 uses every
 // (1<<Shift)-th twiddle of a larger FFT.
+// Static states and their twiddle slices must be treated as read-only.
 type KissFFTState struct {
 	Nfft     int
 	Scale    float32
@@ -26,6 +27,7 @@ type KissFFTState struct {
 	Factors  [2 * MaxFactors]int16
 	Bitrev   []int16
 	Twiddles []KissTwiddleCpx
+	fft5     []fft5Coefficients
 }
 
 // cMul is C_MUL.
@@ -176,6 +178,9 @@ func kfBfly3(fout []KissFFTCpx, fstride int, st *KissFFTState, m, n, mm int) {
 
 // kfBfly5 is kf_bfly5.
 func kfBfly5(fout []KissFFTCpx, fstride int, st *KissFFTState, m, n, mm int) {
+	if fft5Accelerated(fout, fstride, st, m, n) {
+		return
+	}
 	tw := st.Twiddles
 	ya := tw[fstride*m]
 	yb := tw[fstride*2*m]
