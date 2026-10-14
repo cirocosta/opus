@@ -1,10 +1,10 @@
-// Package opus is a pure Go port of libopus 1.6.1, the reference
-// implementation of the Opus audio codec (RFC 6716, RFC 8251).
+// Package opus encodes and decodes Opus audio (RFC 6716, RFC 8251) in Go.
 //
 // The port follows the default floating-point build of libopus (plain
 // ./configure: FLOAT_APPROX and ENABLE_RES24 on; no DRED, deep PLC or
-// OSCE), and produces the same packets and samples. It needs no cgo and
-// no assembly.
+// OSCE), and produces the same packets and samples. It needs no cgo.
+// Numerical kernels use AVX2 when available on amd64, with SSE2 as the
+// baseline. Other architectures and the purego build tag select Go kernels.
 //
 // # Encoder and decoder
 //

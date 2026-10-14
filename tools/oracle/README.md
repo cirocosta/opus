@@ -84,8 +84,8 @@ build, point `OPUS_GO_DIR` at a clean snapshot of the module, for example:
 
 ```
 mkdir -p "$OPUS_WORK/snap"
-git archive HEAD opus | tar -x -C "$OPUS_WORK/snap"
-export OPUS_GO_DIR=$OPUS_WORK/snap/opus
+git archive HEAD | tar -x -C "$OPUS_WORK/snap"
+export OPUS_GO_DIR=$OPUS_WORK/snap
 ```
 
 ## Coverage
