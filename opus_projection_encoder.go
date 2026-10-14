@@ -21,18 +21,60 @@ type ProjectionEncoder struct {
 }
 
 // projectionCopyChannelInFloat ports opus_projection_copy_channel_in_float.
-func projectionCopyChannelInFloat(dst []float32, dstStride int, src analysisPCM, srcStride, srcChannel, frameSize int, matrix *mappingMatrix) {
-	mappingMatrixMultiplyChannelInFloat(matrix, src.f32, srcStride, dst, srcChannel, dstStride, frameSize)
+func projectionCopyChannelInFloat(
+	dst []float32,
+	dstStride int,
+	src analysisPCM,
+	srcStride, srcChannel, frameSize int,
+	matrix *mappingMatrix,
+) {
+	mappingMatrixMultiplyChannelInFloat(
+		matrix,
+		src.f32,
+		srcStride,
+		dst,
+		srcChannel,
+		dstStride,
+		frameSize,
+	)
 }
 
 // projectionCopyChannelInShort ports opus_projection_copy_channel_in_short.
-func projectionCopyChannelInShort(dst []float32, dstStride int, src analysisPCM, srcStride, srcChannel, frameSize int, matrix *mappingMatrix) {
-	mappingMatrixMultiplyChannelInShort(matrix, src.i16, srcStride, dst, srcChannel, dstStride, frameSize)
+func projectionCopyChannelInShort(
+	dst []float32,
+	dstStride int,
+	src analysisPCM,
+	srcStride, srcChannel, frameSize int,
+	matrix *mappingMatrix,
+) {
+	mappingMatrixMultiplyChannelInShort(
+		matrix,
+		src.i16,
+		srcStride,
+		dst,
+		srcChannel,
+		dstStride,
+		frameSize,
+	)
 }
 
 // projectionCopyChannelInInt24 ports opus_projection_copy_channel_in_int24.
-func projectionCopyChannelInInt24(dst []float32, dstStride int, src analysisPCM, srcStride, srcChannel, frameSize int, matrix *mappingMatrix) {
-	mappingMatrixMultiplyChannelInInt24(matrix, src.i32, srcStride, dst, srcChannel, dstStride, frameSize)
+func projectionCopyChannelInInt24(
+	dst []float32,
+	dstStride int,
+	src analysisPCM,
+	srcStride, srcChannel, frameSize int,
+	matrix *mappingMatrix,
+) {
+	mappingMatrixMultiplyChannelInInt24(
+		matrix,
+		src.i32,
+		srcStride,
+		dst,
+		srcChannel,
+		dstStride,
+		frameSize,
+	)
 }
 
 // getOrderPlusOneFromChannels ports get_order_plus_one_from_channels.
@@ -57,7 +99,10 @@ func getOrderPlusOneFromChannels(channels int, orderPlusOne *int) error {
 }
 
 // getStreamsFromChannels ports get_streams_from_channels.
-func getStreamsFromChannels(channels, mappingFamily int, streams, coupledStreams, orderPlusOne *int) error {
+func getStreamsFromChannels(
+	channels, mappingFamily int,
+	streams, coupledStreams, orderPlusOne *int,
+) error {
 	if mappingFamily == 3 {
 		if getOrderPlusOneFromChannels(channels, orderPlusOne) != nil {
 			return ErrBadArg
@@ -75,7 +120,9 @@ func getStreamsFromChannels(channels, mappingFamily int, streams, coupledStreams
 
 // projectionMatrices returns the mixing and demixing matrices and their
 // data for an ambisonics order (plus one), or false.
-func projectionMatrices(orderPlusOne int) (mix, demix *mappingMatrix, mixData, demixData []int16, ok bool) {
+func projectionMatrices(
+	orderPlusOne int,
+) (mix, demix *mappingMatrix, mixData, demixData []int16, ok bool) {
 	switch orderPlusOne {
 	case 2:
 		return &mappingMatrixFoaMixing, &mappingMatrixFoaDemixing,
@@ -101,7 +148,13 @@ func projectionMatrices(orderPlusOne int) (mix, demix *mappingMatrix, mixData, d
 // arguments.
 func projectionAmbisonicsEncoderGetSize(channels, mappingFamily int) int32 {
 	var nbStreams, nbCoupledStreams, orderPlusOne int
-	if getStreamsFromChannels(channels, mappingFamily, &nbStreams, &nbCoupledStreams, &orderPlusOne) != nil {
+	if getStreamsFromChannels(
+		channels,
+		mappingFamily,
+		&nbStreams,
+		&nbCoupledStreams,
+		&orderPlusOne,
+	) != nil {
 		return 0
 	}
 	mix, demix, _, _, ok := projectionMatrices(orderPlusOne)
@@ -128,7 +181,9 @@ func projectionAmbisonicsEncoderGetSize(channels, mappingFamily int) int32 {
 // be 3 and channels (n+1)^2 or (n+1)^2+2 for ambisonics order n of 1 to
 // 5. Streams and CoupledStreams return the stream layout, and
 // DemixingMatrix the matrix that a decoder needs.
-func NewProjectionAmbisonicsEncoder(fs, channels, mappingFamily, application int) (*ProjectionEncoder, error) {
+func NewProjectionAmbisonicsEncoder(
+	fs, channels, mappingFamily, application int,
+) (*ProjectionEncoder, error) {
 	// Allocate space for the projection encoder.
 	if projectionAmbisonicsEncoderGetSize(channels, mappingFamily) == 0 {
 		return nil, ErrAllocFail
@@ -147,7 +202,13 @@ func (st *ProjectionEncoder) InitAmbisonics(fs, channels, mappingFamily, applica
 	var streams, coupledStreams, orderPlusOne int
 	var mapping [255]byte
 
-	if getStreamsFromChannels(channels, mappingFamily, &streams, &coupledStreams, &orderPlusOne) != nil {
+	if getStreamsFromChannels(
+		channels,
+		mappingFamily,
+		&streams,
+		&coupledStreams,
+		&orderPlusOne,
+	) != nil {
 		return ErrBadArg
 	}
 
@@ -220,8 +281,10 @@ func (st *ProjectionEncoder) Encode24(pcm []int32, frameSize int, data []byte) (
 		v[2*i] = int16(uint32(s))
 		v[2*i+1] = int16(uint32(s) >> 16)
 	}
-	return encodeResult(st.ms.encodeNative(projectionCopyChannelInInt24, analysisPCM{i16: v, i32: pcm},
-		frameSize, data, 24, downmixInt, false, &st.mixing))
+	return encodeResult(
+		st.ms.encodeNative(projectionCopyChannelInInt24, analysisPCM{i16: v, i32: pcm},
+			frameSize, data, 24, downmixInt, false, &st.mixing),
+	)
 }
 
 // EncodeFloat encodes a frame of float PCM (opus_projection_encode_float).

@@ -42,8 +42,10 @@ type encCase struct {
 }
 
 func parseEncCase(spec string) (*encCase, error) {
-	c := &encCase{spec: spec, typ: "enc", fs: 48000, ch: 1, app: ApplicationAudio, fr: 960, n: 50,
-		api: "16", mb: 1500, streams: 1, family: 1, in: "x"}
+	c := &encCase{
+		spec: spec, typ: "enc", fs: 48000, ch: 1, app: ApplicationAudio, fr: 960, n: 50,
+		api: "16", mb: 1500, streams: 1, family: 1, in: "x",
+	}
 	for _, tok := range strings.Fields(spec) {
 		k, v, ok := strings.Cut(tok, "=")
 		if !ok {
@@ -118,7 +120,7 @@ func encExcerpt() ([]int16, error) {
 			excerptOnce.err = err
 			return
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		z, err := gzip.NewReader(f)
 		if err != nil {
 			excerptOnce.err = err
@@ -444,13 +446,19 @@ func runEncCase(t testing.TB, c *encCase, pcm []int16, checkDecode bool) string 
 	case "sur":
 		r.ms, err = NewMSSurroundEncoder(c.fs, c.ch, c.family, c.app)
 		if err == nil {
-			fmt.Fprintf(&sb, "layout %d %d", r.ms.Streams(), r.ms.CoupledStreams())
+			_, _ = fmt.Fprintf(&sb, "layout %d %d", r.ms.Streams(), r.ms.CoupledStreams())
 			for _, m := range r.ms.Mapping() {
-				fmt.Fprintf(&sb, " %d", m)
+				_, _ = fmt.Fprintf(&sb, " %d", m)
 			}
 			sb.WriteString("\n")
 			if checkDecode {
-				r.msDec, err = NewMSDecoder(c.fs, c.ch, r.ms.Streams(), r.ms.CoupledStreams(), r.ms.Mapping())
+				r.msDec, err = NewMSDecoder(
+					c.fs,
+					c.ch,
+					r.ms.Streams(),
+					r.ms.CoupledStreams(),
+					r.ms.Mapping(),
+				)
 			}
 		}
 	case "proj":
@@ -460,21 +468,34 @@ func runEncCase(t testing.TB, c *encCase, pcm []int16, checkDecode bool) string 
 			if e := r.proj.DemixingMatrix(m); e != nil {
 				t.Fatal(e)
 			}
-			fmt.Fprintf(&sb, "layout %d %d %d %d %s\n", r.proj.Streams(), r.proj.CoupledStreams(),
-				len(m), r.proj.DemixingMatrixGain(), hex.EncodeToString(m))
+			_, _ = fmt.Fprintf(
+				&sb,
+				"layout %d %d %d %d %s\n",
+				r.proj.Streams(),
+				r.proj.CoupledStreams(),
+				len(m),
+				r.proj.DemixingMatrixGain(),
+				hex.EncodeToString(m),
+			)
 			if checkDecode {
-				r.projDec, err = NewProjectionDecoder(c.fs, c.ch, r.proj.Streams(), r.proj.CoupledStreams(), m)
+				r.projDec, err = NewProjectionDecoder(
+					c.fs,
+					c.ch,
+					r.proj.Streams(),
+					r.proj.CoupledStreams(),
+					m,
+				)
 			}
 		}
 	default:
 		t.Fatalf("bad type %q", c.typ)
 	}
-	fmt.Fprintf(&sb, "create %d\n", errCode(err))
+	_, _ = fmt.Fprintf(&sb, "create %d\n", errCode(err))
 	if err != nil {
 		return sb.String()
 	}
 	if r.enc != nil {
-		fmt.Fprintf(&sb, "lookahead %d\n", r.enc.Lookahead())
+		_, _ = fmt.Fprintf(&sb, "lookahead %d\n", r.enc.Lookahead())
 	}
 	frameLen := c.fr * c.ch
 	p24 := make([]int32, frameLen)
@@ -484,7 +505,7 @@ func runEncCase(t testing.TB, c *encCase, pcm []int16, checkDecode bool) string 
 	for fi := 0; fi < c.n; fi++ {
 		for _, ct := range c.ctls {
 			if ct.frame == fi {
-				fmt.Fprintf(&sb, "c %s %d %d\n", ct.key, ct.val, r.ctl(ct.key, ct.val))
+				_, _ = fmt.Fprintf(&sb, "c %s %d %d\n", ct.key, ct.val, r.ctl(ct.key, ct.val))
 			}
 		}
 		in := pcm[fi*frameLen : (fi+1)*frameLen]
@@ -540,9 +561,15 @@ func runEncCase(t testing.TB, c *encCase, pcm []int16, checkDecode bool) string 
 		default:
 			rng = r.proj.FinalRange()
 		}
-		fmt.Fprintf(&sb, "%d %d", ret, rng)
+		_, _ = fmt.Fprintf(&sb, "%d %d", ret, rng)
 		if r.enc != nil {
-			fmt.Fprintf(&sb, " %d %d %d", r.enc.Bandwidth(), b2i(r.enc.InDTX()), r.enc.Bitrate())
+			_, _ = fmt.Fprintf(
+				&sb,
+				" %d %d %d",
+				r.enc.Bandwidth(),
+				b2i(r.enc.InDTX()),
+				r.enc.Bitrate(),
+			)
 		}
 		sb.WriteString(" ")
 		if ret > 0 {
@@ -587,7 +614,15 @@ func encGetters(r *encRunner) string {
 
 // checkEncDecode decodes a packet and compares the decoder final range
 // with the encoder's.
-func checkEncDecode(t testing.TB, c *encCase, fi int, r *encRunner, pkt []byte, out []int16, rng uint32) {
+func checkEncDecode(
+	t testing.TB,
+	c *encCase,
+	fi int,
+	r *encRunner,
+	pkt []byte,
+	out []int16,
+	rng uint32,
+) {
 	var err error
 	var drng uint32
 	switch {
@@ -628,7 +663,7 @@ func readEncGoldens(t *testing.T, path string) []encGolden {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var gs []encGolden
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
@@ -676,9 +711,23 @@ func checkEncGoldens(t *testing.T, path string) {
 		out := runEncCase(t, c, pcm, true)
 		lines := strings.Count(out, "\n")
 		if lines != g.lines || digest(out) != g.hash {
-			t.Errorf("case %d %q: got %d lines %s, want %d lines %s", i+1, g.spec, lines, digest(out), g.lines, g.hash)
+			t.Errorf(
+				"case %d %q: got %d lines %s, want %d lines %s",
+				i+1,
+				g.spec,
+				lines,
+				digest(out),
+				g.lines,
+				g.hash,
+			)
 			if dump != "" {
-				os.WriteFile(filepath.Join(dump, fmt.Sprintf("%04d.txt", i+1)), []byte(out), 0o644)
+				if err := os.WriteFile(
+					filepath.Join(dump, fmt.Sprintf("%04d.txt", i+1)),
+					[]byte(out),
+					0o644,
+				); err != nil {
+					t.Fatal(err)
+				}
 			}
 		}
 	}
@@ -734,7 +783,11 @@ func TestWriteEncInputs(t *testing.T) {
 		for j, s := range pcm {
 			binary.LittleEndian.PutUint16(raw[2*j:], uint16(s))
 		}
-		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("%04d.pcm", i)), raw, 0o644); err != nil {
+		if err := os.WriteFile(
+			filepath.Join(dir, fmt.Sprintf("%04d.pcm", i)),
+			raw,
+			0o644,
+		); err != nil {
 			t.Fatal(err)
 		}
 	}

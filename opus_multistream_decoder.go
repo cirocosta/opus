@@ -24,8 +24,7 @@ type MSDecoder struct {
 // streams, the following values are the mono streams, and 255 is a
 // silent channel.
 func NewMSDecoder(fs, channels, streams, coupledStreams int, mapping []byte) (*MSDecoder, error) {
-	if channels > 255 || channels < 1 || coupledStreams > streams ||
-		streams < 1 || coupledStreams < 0 || streams > 255-coupledStreams {
+	if !validStreamCounts(channels, streams, coupledStreams) {
 		return nil, ErrBadArg
 	}
 	st := new(MSDecoder)
@@ -38,8 +37,7 @@ func NewMSDecoder(fs, channels, streams, coupledStreams int, mapping []byte) (*M
 // Init initializes a multistream decoder
 // (opus_multistream_decoder_init).
 func (st *MSDecoder) Init(fs, channels, streams, coupledStreams int, mapping []byte) error {
-	if channels > 255 || channels < 1 || coupledStreams > streams ||
-		streams < 1 || coupledStreams < 0 || streams > 255-coupledStreams {
+	if !validStreamCounts(channels, streams, coupledStreams) {
 		return ErrBadArg
 	}
 	if len(mapping) < channels {
@@ -50,9 +48,7 @@ func (st *MSDecoder) Init(fs, channels, streams, coupledStreams int, mapping []b
 	st.layout.nbStreams = streams
 	st.layout.nbCoupledStreams = coupledStreams
 
-	for i := 0; i < st.layout.nbChannels; i++ {
-		st.layout.mapping[i] = mapping[i]
-	}
+	copy(st.layout.mapping[:channels], mapping[:channels])
 	if !validateLayout(&st.layout) {
 		return ErrBadArg
 	}
@@ -120,10 +116,17 @@ const (
 // copyChannelOut ports opus_copy_channel_out_short/_float/_int24 and the
 // opus_projection_copy_channel_out_* functions. src is nil for a muted
 // channel.
-func (o *msOutput) copyChannelOut(dstStride, dstChannel int, src []float32, srcStride, frameSize int) {
+// keep packet offsets and channel-output transitions in reference order
+//
+//revive:disable-next-line:cognitive-complexity
+func (o *msOutput) copyChannelOut(
+	dstStride, dstChannel int,
+	src []float32,
+	srcStride, frameSize int,
+) {
 	if o.matrix != nil {
-		switch {
-		case o.kind == outInt16:
+		switch o.kind {
+		case outInt16:
 			if dstChannel == 0 {
 				clear(o.i16[:frameSize*dstStride])
 			}
@@ -131,7 +134,7 @@ func (o *msOutput) copyChannelOut(dstStride, dstChannel int, src []float32, srcS
 				mappingMatrixMultiplyChannelOutShort(o.matrix, src, dstChannel, srcStride,
 					o.i16, dstStride, frameSize)
 			}
-		case o.kind == outInt24:
+		case outInt24:
 			if dstChannel == 0 {
 				clear(o.i24[:frameSize*dstStride])
 			}
@@ -150,8 +153,8 @@ func (o *msOutput) copyChannelOut(dstStride, dstChannel int, src []float32, srcS
 		}
 		return
 	}
-	switch {
-	case o.kind == outInt16:
+	switch o.kind {
+	case outInt16:
 		dst := o.i16
 		if src != nil {
 			for i := 0; i < frameSize; i++ {
@@ -162,7 +165,7 @@ func (o *msOutput) copyChannelOut(dstStride, dstChannel int, src []float32, srcS
 				dst[i*dstStride+dstChannel] = 0
 			}
 		}
-	case o.kind == outInt24:
+	case outInt24:
 		dst := o.i24
 		if src != nil {
 			for i := 0; i < frameSize; i++ {
@@ -188,7 +191,15 @@ func (o *msOutput) copyChannelOut(dstStride, dstChannel int, src []float32, srcS
 }
 
 // decodeNative ports opus_multistream_decode_native.
-func (st *MSDecoder) decodeNative(data []byte, out *msOutput, frameSize int, decodeFEC, softClip bool) int {
+// keep packet offsets and channel-output transitions in reference order
+//
+//revive:disable-next-line:cognitive-complexity
+func (st *MSDecoder) decodeNative(
+	data []byte,
+	out *msOutput,
+	frameSize int,
+	decodeFEC, softClip bool,
+) int {
 	doPLC := false
 	if frameSize <= 0 {
 		return int(ErrBadArg)
@@ -233,33 +244,33 @@ func (st *MSDecoder) decodeNative(data []byte, out *msOutput, frameSize int, dec
 			// Copy "left" audio to the channel(s) where it belongs.
 			prev := -1
 			for {
-				chan_ := getLeftChannel(&st.layout, s, prev)
-				if chan_ == -1 {
+				channel := getLeftChannel(&st.layout, s, prev)
+				if channel == -1 {
 					break
 				}
-				out.copyChannelOut(st.layout.nbChannels, chan_, buf, 2, frameSize)
-				prev = chan_
+				out.copyChannelOut(st.layout.nbChannels, channel, buf, 2, frameSize)
+				prev = channel
 			}
 			// Copy "right" audio to the channel(s) where it belongs.
 			prev = -1
 			for {
-				chan_ := getRightChannel(&st.layout, s, prev)
-				if chan_ == -1 {
+				channel := getRightChannel(&st.layout, s, prev)
+				if channel == -1 {
 					break
 				}
-				out.copyChannelOut(st.layout.nbChannels, chan_, buf[1:], 2, frameSize)
-				prev = chan_
+				out.copyChannelOut(st.layout.nbChannels, channel, buf[1:], 2, frameSize)
+				prev = channel
 			}
 		} else {
 			// Copy audio to the channel(s) where it belongs.
 			prev := -1
 			for {
-				chan_ := getMonoChannel(&st.layout, s, prev)
-				if chan_ == -1 {
+				channel := getMonoChannel(&st.layout, s, prev)
+				if channel == -1 {
 					break
 				}
-				out.copyChannelOut(st.layout.nbChannels, chan_, buf, 1, frameSize)
-				prev = chan_
+				out.copyChannelOut(st.layout.nbChannels, channel, buf, 1, frameSize)
+				prev = channel
 			}
 		}
 	}
@@ -297,7 +308,12 @@ func (st *MSDecoder) Decode(data []byte, pcm []int16, frameSize int, decodeFEC b
 
 // Decode24 decodes a multistream packet to 24-bit PCM in int32 samples
 // (opus_multistream_decode24).
-func (st *MSDecoder) Decode24(data []byte, pcm []int32, frameSize int, decodeFEC bool) (int, error) {
+func (st *MSDecoder) Decode24(
+	data []byte,
+	pcm []int32,
+	frameSize int,
+	decodeFEC bool,
+) (int, error) {
 	if !st.checkPCM(len(pcm), frameSize) {
 		return 0, ErrBufferTooSmall
 	}
@@ -307,7 +323,12 @@ func (st *MSDecoder) Decode24(data []byte, pcm []int32, frameSize int, decodeFEC
 
 // DecodeFloat decodes a multistream packet to float PCM
 // (opus_multistream_decode_float).
-func (st *MSDecoder) DecodeFloat(data []byte, pcm []float32, frameSize int, decodeFEC bool) (int, error) {
+func (st *MSDecoder) DecodeFloat(
+	data []byte,
+	pcm []float32,
+	frameSize int,
+	decodeFEC bool,
+) (int, error) {
 	if !st.checkPCM(len(pcm), frameSize) {
 		return 0, ErrBufferTooSmall
 	}

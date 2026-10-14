@@ -62,7 +62,8 @@ func mappingMatrixInit(matrix *mappingMatrix, rows, cols, gain int, data []int16
 // mapping_matrix_multiply_channel_in_float. output starts at the first
 // sample of the output row; samples are output_rows apart.
 func mappingMatrixMultiplyChannelInFloat(matrix *mappingMatrix, input []float32,
-	inputRows int, output []float32, outputRow, outputRows, frameSize int) {
+	inputRows int, output []float32, outputRow, outputRows, frameSize int,
+) {
 	// Matrix data is ordered col-wise.
 	matrixData := mappingMatrixGetData(matrix)
 	for i := 0; i < frameSize; i++ {
@@ -79,7 +80,8 @@ func mappingMatrixMultiplyChannelInFloat(matrix *mappingMatrix, input []float32,
 // mapping_matrix_multiply_channel_out_float. input starts at the first
 // sample of the input row; samples are input_rows apart.
 func mappingMatrixMultiplyChannelOutFloat(matrix *mappingMatrix, input []float32,
-	inputRow, inputRows int, output []float32, outputRows, frameSize int) {
+	inputRow, inputRows int, output []float32, outputRows, frameSize int,
+) {
 	// Matrix data is ordered col-wise.
 	matrixData := mappingMatrixGetData(matrix)
 	for i := 0; i < frameSize; i++ {
@@ -96,7 +98,8 @@ func mappingMatrixMultiplyChannelOutFloat(matrix *mappingMatrix, input []float32
 // mappingMatrixMultiplyChannelInShort ports
 // mapping_matrix_multiply_channel_in_short.
 func mappingMatrixMultiplyChannelInShort(matrix *mappingMatrix, input []int16,
-	inputRows int, output []float32, outputRow, outputRows, frameSize int) {
+	inputRows int, output []float32, outputRow, outputRows, frameSize int,
+) {
 	// Matrix data is ordered col-wise.
 	matrixData := mappingMatrixGetData(matrix)
 	for i := 0; i < frameSize; i++ {
@@ -112,7 +115,8 @@ func mappingMatrixMultiplyChannelInShort(matrix *mappingMatrix, input []int16,
 // mappingMatrixMultiplyChannelOutShort ports
 // mapping_matrix_multiply_channel_out_short.
 func mappingMatrixMultiplyChannelOutShort(matrix *mappingMatrix, input []float32,
-	inputRow, inputRows int, output []int16, outputRows, frameSize int) {
+	inputRow, inputRows int, output []int16, outputRows, frameSize int,
+) {
 	// Matrix data is ordered col-wise.
 	matrixData := mappingMatrixGetData(matrix)
 	for i := 0; i < frameSize; i++ {
@@ -128,7 +132,8 @@ func mappingMatrixMultiplyChannelOutShort(matrix *mappingMatrix, input []float32
 // mapping_matrix_multiply_channel_in_int24. In the float build opus_val64
 // is float.
 func mappingMatrixMultiplyChannelInInt24(matrix *mappingMatrix, input []int32,
-	inputRows int, output []float32, outputRow, outputRows, frameSize int) {
+	inputRows int, output []float32, outputRow, outputRows, frameSize int,
+) {
 	// Matrix data is ordered col-wise.
 	matrixData := mappingMatrixGetData(matrix)
 	for i := 0; i < frameSize; i++ {
@@ -144,7 +149,8 @@ func mappingMatrixMultiplyChannelInInt24(matrix *mappingMatrix, input []int32,
 // mappingMatrixMultiplyChannelOutInt24 ports
 // mapping_matrix_multiply_channel_out_int24.
 func mappingMatrixMultiplyChannelOutInt24(matrix *mappingMatrix, input []float32,
-	inputRow, inputRows int, output []int32, outputRows, frameSize int) {
+	inputRow, inputRows int, output []int32, outputRows, frameSize int,
+) {
 	// Matrix data is ordered col-wise.
 	matrixData := mappingMatrixGetData(matrix)
 	for i := 0; i < frameSize; i++ {

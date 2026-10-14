@@ -69,3 +69,15 @@ func getMonoChannel(layout *channelLayout, streamID, prev int) int {
 	}
 	return -1
 }
+
+// validMSArgs checks encoder stream counts, including all input channels.
+func validMSArgs(channels, streams, coupledStreams int) bool {
+	return validStreamCounts(channels, streams, coupledStreams) &&
+		streams+coupledStreams <= channels
+}
+
+// validStreamCounts permits decoder layouts that omit encoded channels.
+func validStreamCounts(channels, streams, coupledStreams int) bool {
+	return channels <= 255 && channels >= 1 && coupledStreams <= streams &&
+		streams >= 1 && coupledStreams >= 0 && streams <= 255-coupledStreams
+}

@@ -29,11 +29,11 @@ const (
 
 	// SILK constants from silk/define.h and silk/tuning_parameters.h.
 	dtxActivityThreshold    float32 = 0.1 // DTX_ACTIVITY_THRESHOLD
-	nbSpeechFramesBeforeDTX         = 10  // NB_SPEECH_FRAMES_BEFORE_DTX
-	maxConsecutiveDTX               = 20  // MAX_CONSECUTIVE_DTX
-	vadNoDecision                   = -1  // VAD_NO_DECISION
-	typeNoVoiceActivity             = 0   // TYPE_NO_VOICE_ACTIVITY
-	variableHPMinCutoffHz           = 60  // VARIABLE_HP_MIN_CUTOFF_HZ
+	nbSpeechFramesBeforeDTX int     = 10  // NB_SPEECH_FRAMES_BEFORE_DTX
+	maxConsecutiveDTX       int     = 20  // MAX_CONSECUTIVE_DTX
+	vadNoDecision           int     = -1  // VAD_NO_DECISION
+	typeNoVoiceActivity     int     = 0   // TYPE_NO_VOICE_ACTIVITY
+	variableHPMinCutoffHz   int32   = 60  // VARIABLE_HP_MIN_CUTOFF_HZ
 
 	// veryRmall is VERY_SMALL.
 	verySmall float32 = 1e-30
@@ -259,12 +259,8 @@ func (st *Encoder) Init(fs, channels, application int) error {
 	st.fs = int32(fs)
 
 	if application != ApplicationRestrictedCelt {
-		if silkEnc == nil {
-			silkEnc = new(silk.Encoder)
-		}
-		st.silkEnc = silkEnc
-		if ret := st.silkEnc.Init(st.channels, &st.silkMode); ret != 0 {
-			return ErrInternalError
+		if err := st.initSilkEncoder(silkEnc); err != nil {
+			return err
 		}
 	}
 
@@ -285,17 +281,10 @@ func (st *Encoder) Init(fs, channels, application int) error {
 	st.silkMode.UseCBR = 0
 	st.silkMode.ReducedDependency = 0
 
-	// Initialize CELT encoder.
 	if application != ApplicationRestrictedSilk {
-		if celtEnc == nil {
-			celtEnc = new(celt.Encoder)
+		if err := st.initCeltEncoder(celtEnc); err != nil {
+			return err
 		}
-		st.celtEnc = celtEnc
-		if ret := st.celtEnc.Init(st.fs, channels); ret != celt.OK {
-			return ErrInternalError
-		}
-		st.celtEnc.SetSignalling(0)
-		st.celtEnc.SetComplexity(st.silkMode.Complexity)
 	}
 
 	st.useVBR = 1
@@ -334,6 +323,32 @@ func (st *Encoder) Init(fs, channels, application int) error {
 	return nil
 }
 
+// initSilkEncoder initializes speech coding while reusing allocated state.
+func (st *Encoder) initSilkEncoder(reused *silk.Encoder) error {
+	if reused == nil {
+		reused = new(silk.Encoder)
+	}
+	st.silkEnc = reused
+	if ret := reused.Init(st.channels, &st.silkMode); ret != 0 {
+		return ErrInternalError
+	}
+	return nil
+}
+
+// initCeltEncoder initializes transform coding while reusing allocated state.
+func (st *Encoder) initCeltEncoder(reused *celt.Encoder) error {
+	if reused == nil {
+		reused = new(celt.Encoder)
+	}
+	st.celtEnc = reused
+	if ret := reused.Init(st.fs, st.channels); ret != celt.OK {
+		return ErrInternalError
+	}
+	reused.SetSignalling(0)
+	reused.SetComplexity(st.silkMode.Complexity)
+	return nil
+}
+
 // genTOC is gen_toc.
 func genTOC(mode, framerate, bandwidth, channels int) byte {
 	var toc byte
@@ -342,10 +357,11 @@ func genTOC(mode, framerate, bandwidth, channels int) byte {
 		framerate <<= 1
 		period++
 	}
-	if mode == modeSilkOnly {
+	switch mode {
+	case modeSilkOnly:
 		toc = byte((bandwidth - BandwidthNarrowband) << 5)
 		toc |= byte((period - 2) << 3)
-	} else if mode == modeCeltOnly {
+	case modeCeltOnly:
 		tmp := bandwidth - BandwidthMediumband
 		if tmp < 0 {
 			tmp = 0
@@ -353,7 +369,7 @@ func genTOC(mode, framerate, bandwidth, channels int) byte {
 		toc = 0x80
 		toc |= byte(tmp << 5)
 		toc |= byte(period << 3)
-	} else { // Hybrid
+	default: // Hybrid
 		toc = 0x60
 		toc |= byte((bandwidth - BandwidthSuperwideband) << 4)
 		toc |= byte((period - 2) << 3)
@@ -366,7 +382,14 @@ func genTOC(mode, framerate, bandwidth, channels int) byte {
 
 // silkBiquadRes is the float build of silk_biquad_res: a second order
 // ARMA filter over len samples of in, stride apart.
-func silkBiquadRes(in []float32, bQ28 *[3]int32, aQ28 *[2]int32, s []float32, out []float32, length, stride int) {
+func silkBiquadRes(
+	in []float32,
+	bQ28 *[3]int32,
+	aQ28 *[2]int32,
+	s []float32,
+	out []float32,
+	length, stride int,
+) {
 	var a [2]float32
 	var b [3]float32
 	a[0] = float32(aQ28[0]) * (1.0 / (1 << 28))
@@ -388,7 +411,14 @@ func silkBiquadRes(in []float32, bQ28 *[3]int32, aQ28 *[2]int32, s []float32, ou
 }
 
 // hpCutoff is hp_cutoff.
-func hpCutoff(in []float32, cutoffHz int32, out []float32, hpMem []float32, length, channels int, fs int32) {
+func hpCutoff(
+	in []float32,
+	cutoffHz int32,
+	out []float32,
+	hpMem []float32,
+	length, channels int,
+	fs int32,
+) {
 	var bQ28 [3]int32
 	var aQ28 [2]int32
 
@@ -414,7 +444,14 @@ func hpCutoff(in []float32, cutoffHz int32, out []float32, hpMem []float32, leng
 }
 
 // dcReject is the float build of dc_reject.
-func dcReject(in []float32, cutoffHz int32, out []float32, hpMem []float32, length, channels int, fs int32) {
+func dcReject(
+	in []float32,
+	cutoffHz int32,
+	out []float32,
+	hpMem []float32,
+	length, channels int,
+	fs int32,
+) {
 	coef := float32(float32(6.3)*float32(cutoffHz)) / float32(fs)
 	coef2 := 1 - coef
 	if channels == 2 {
@@ -445,7 +482,13 @@ func dcReject(in []float32, cutoffHz int32, out []float32, hpMem []float32, leng
 }
 
 // stereoFade is stereo_fade. out may alias in.
-func stereoFade(in, out []float32, g1, g2 float32, overlap48, frameSize, channels int, window []float32, fs int32) {
+func stereoFade(
+	in, out []float32,
+	g1, g2 float32,
+	overlap48, frameSize, channels int,
+	window []float32,
+	fs int32,
+) {
 	inc := max(1, int(48000/fs))
 	overlap := overlap48 / inc
 	g1 = 1 - g1
@@ -469,7 +512,13 @@ func stereoFade(in, out []float32, g1, g2 float32, overlap48, frameSize, channel
 }
 
 // gainFade is gain_fade. out may alias in.
-func gainFade(in, out []float32, g1, g2 float32, overlap48, frameSize, channels int, window []float32, fs int32) {
+func gainFade(
+	in, out []float32,
+	g1, g2 float32,
+	overlap48, frameSize, channels int,
+	window []float32,
+	fs int32,
+) {
 	inc := max(1, int(48000/fs))
 	overlap := overlap48 / inc
 	if channels == 1 {
@@ -512,14 +561,22 @@ func (st *Encoder) userBitrateToBitrate(frameSize, maxDataBytes int) int32 {
 		frameSize = int(st.fs / 400)
 	}
 	maxBitrate := bitsToBitrate(int32(maxDataBytes*8), st.fs, int32(frameSize))
-	if st.userBitrateBps == Auto {
+	switch st.userBitrateBps {
+	case Auto:
 		userBitrate = 60*st.fs/int32(frameSize) + st.fs*int32(st.channels)
-	} else if st.userBitrateBps == BitrateMax {
+	case BitrateMax:
 		userBitrate = 1500000
-	} else {
+	default:
 		userBitrate = st.userBitrateBps
 	}
 	return min(userBitrate, maxBitrate)
+}
+
+// supportedFrameDuration reports whether samples form an Opus frame at rate.
+func supportedFrameDuration(samples, rate int) bool {
+	return 400*samples == rate || 200*samples == rate || 100*samples == rate ||
+		50*samples == rate || 25*samples == rate || 50*samples == 3*rate ||
+		50*samples == 4*rate || 50*samples == 5*rate || 50*samples == 6*rate
 }
 
 // frameSizeSelect is frame_size_select.
@@ -543,9 +600,7 @@ func frameSizeSelect(application, frameSize, variableDuration int, fs int32) int
 	if newSize > frameSize {
 		return -1
 	}
-	if 400*newSize != f && 200*newSize != f && 100*newSize != f &&
-		50*newSize != f && 25*newSize != f && 50*newSize != 3*f &&
-		50*newSize != 4*f && 50*newSize != 5*f && 50*newSize != 6*f {
+	if !supportedFrameDuration(newSize, f) {
 		return -1
 	}
 	if application == ApplicationRestrictedSilk && newSize < f/100 {
@@ -615,7 +670,10 @@ func computeStereoWidth(pcm []float32, frameSize int, fs int32, mem *stereoWidth
 		// Smoothing over one second.
 		mem.smoothedWidth += (width - mem.smoothedWidth) / float32(frameRate)
 		// Peak follower.
-		mem.maxFollower = dsp.Max16(mem.maxFollower-float32(.02)/float32(frameRate), mem.smoothedWidth)
+		mem.maxFollower = dsp.Max16(
+			mem.maxFollower-float32(.02)/float32(frameRate),
+			mem.smoothedWidth,
+		)
 	}
 	return dsp.Min32(1, float32(20*mem.maxFollower))
 }
@@ -626,30 +684,36 @@ func decideFEC(useInBandFEC, packetLossPerc, lastFEC, mode int, bandwidth *int, 
 		return 0
 	}
 	origBandwidth := *bandwidth
+	var hysteresisSign int32
+	switch lastFEC {
+	case 1:
+		hysteresisSign = -1
+	case 0:
+		hysteresisSign = 1
+	}
 	for {
 		// Compute threshold for using FEC at the current bandwidth
 		// setting.
 		lbrrRateThresBps := fecThresholds[2*(*bandwidth-BandwidthNarrowband)]
 		hysteresis := fecThresholds[2*(*bandwidth-BandwidthNarrowband)+1]
-		if lastFEC == 1 {
-			lbrrRateThresBps -= hysteresis
-		}
-		if lastFEC == 0 {
-			lbrrRateThresBps += hysteresis
-		}
-		lbrrRateThresBps = silkSMULWB(lbrrRateThresBps*int32(125-min(packetLossPerc, 25)), fec001Q16)
+		lbrrRateThresBps += hysteresisSign * hysteresis
+		lbrrRateThresBps = silkSMULWB(
+			lbrrRateThresBps*int32(125-min(packetLossPerc, 25)),
+			fec001Q16,
+		)
 		// If loss <= 5%, we look at whether we have enough rate to
 		// enable FEC. If loss > 5%, we decrease the bandwidth until we
 		// can enable FEC.
 		if rate > lbrrRateThresBps {
 			return 1
-		} else if packetLossPerc <= 5 {
+		}
+		if packetLossPerc <= 5 {
 			return 0
-		} else if *bandwidth > BandwidthNarrowband {
-			*bandwidth--
-		} else {
+		}
+		if *bandwidth <= BandwidthNarrowband {
 			break
 		}
+		*bandwidth--
 	}
 	// Couldn't find any bandwidth to enable FEC, keep original
 	// bandwidth.
@@ -726,20 +790,21 @@ func computeEquivRate(bitrate int32, channels, frameRate, vbr, mode, complexity,
 	}
 	// Complexity makes about 10% difference (from 0 to 10) in general.
 	equiv = equiv * int32(90+complexity) / 100
-	if mode == modeSilkOnly || mode == modeHybrid {
+	switch mode {
+	case modeSilkOnly, modeHybrid:
 		// SILK complexity 0-1 uses the non-delayed-decision NSQ, which
 		// costs about 20%.
 		if complexity < 2 {
 			equiv = equiv * 4 / 5
 		}
 		equiv -= equiv * int32(loss) / int32(6*loss+10)
-	} else if mode == modeCeltOnly {
+	case modeCeltOnly:
 		// CELT complexity 0-4 doesn't have the pitch filter, which costs
 		// about 10%.
 		if complexity < 5 {
 			equiv = equiv * 9 / 10
 		}
-	} else {
+	default:
 		// Mode not known yet. Half the SILK loss.
 		equiv -= equiv * int32(loss) / int32(12*loss+20)
 	}
@@ -805,7 +870,15 @@ func computeRedundancyBytes(maxDataBytes int, bitrateBps int32, frameRate, chann
 // padPacket is opus_packet_pad on the scratch repacketizer.
 func (st *Encoder) padPacket(data []byte, length, newLen int) int {
 	sc := st.scratch
-	ret := packetPadScratch(data, int32(length), int32(newLen), true, nil, &sc.padRP, st.padScratch(length))
+	ret := packetPadScratch(
+		data,
+		int32(length),
+		int32(newLen),
+		true,
+		nil,
+		&sc.padRP,
+		st.padScratch(length),
+	)
 	if ret > 0 {
 		return OK
 	}
@@ -817,8 +890,20 @@ func (st *Encoder) padPacket(data []byte, length, newLen int) int {
 // analysisPCM, analysisSize, c1, c2, analysisChannels and downmix describe
 // the input of the tonality analysis. It returns the packet length or a
 // negative error code.
-func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDataBytes int, lsbDepth int,
-	analysisPCM analysisPCM, analysisSize, c1, c2, analysisChannels int, downmix downmixFunc, floatAPI bool) int {
+// keep reference mode decisions, entropy budgets and retry state in one flow
+//
+//revive:disable-next-line:cognitive-complexity
+func (st *Encoder) encodeNative(
+	pcm []float32,
+	frameSize int,
+	data []byte,
+	outDataBytes int,
+	lsbDepth int,
+	analysisPCM analysisPCM,
+	analysisSize, c1, c2, analysisChannels int,
+	downmix downmixFunc,
+	floatAPI bool,
+) int {
 	var (
 		ret         int
 		prefill     int
@@ -856,7 +941,8 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 	}
 	isSilence := isDigitalSilence(pcm, frameSize, st.channels, lsbDepth)
 	info.Valid = 0
-	if st.silkMode.Complexity >= 7 && st.fs >= 16000 && st.fs <= 48000 && st.application != ApplicationRestrictedSilk {
+	if st.silkMode.Complexity >= 7 && st.fs >= 16000 && st.fs <= 48000 &&
+		st.application != ApplicationRestrictedSilk {
 		analysisReadPosBak = st.analysis.readPos
 		analysisReadSubframeBak = st.analysis.readSubframe
 		runAnalysis(&st.analysis, celtMode, analysisPCM, analysisSize, frameSize,
@@ -875,11 +961,12 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 	if info.Valid != 0 {
 		if st.signalType == Auto {
 			var prob float32
-			if st.prevMode == 0 {
+			switch st.prevMode {
+			case 0:
 				prob = info.MusicProb
-			} else if st.prevMode == modeCeltOnly {
+			case modeCeltOnly:
 				prob = info.MusicProbMax
-			} else {
+			default:
 				prob = info.MusicProbMin
 			}
 			st.voiceRatio = int(math.Floor(.5 + float64(float32(100*float32(1-prob)))))
@@ -915,7 +1002,10 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 
 	frameRate := int(st.fs) / frameSize
 	if st.useVBR == 0 {
-		cbrBytes = min(int((bitrateToBits(st.bitrateBps, st.fs, int32(frameSize))+4)/8), maxDataBytes)
+		cbrBytes = min(
+			int((bitrateToBits(st.bitrateBps, st.fs, int32(frameSize))+4)/8),
+			maxDataBytes,
+		)
 		st.bitrateBps = bitsToBitrate(int32(cbrBytes*8), st.fs, int32(frameSize))
 		// Make sure we provide at least one byte to avoid failing.
 		maxDataBytes = max(1, cbrBytes)
@@ -1022,7 +1112,9 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 	} else {
 		// Rate-dependent mono-stereo decision.
 		if st.channels == 2 {
-			stereoThreshold := int32(stereoMusicThreshold + ((voiceEst * voiceEst * (stereoVoiceThreshold - stereoMusicThreshold)) >> 14))
+			stereoThreshold := int32(
+				stereoMusicThreshold + ((voiceEst * voiceEst * (stereoVoiceThreshold - stereoMusicThreshold)) >> 14),
+			)
 			if st.streamChannels == 2 {
 				stereoThreshold -= 1000
 			} else {
@@ -1043,7 +1135,7 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 
 	// Allow SILK DTX if DTX is enabled but the generalized DTX cannot be
 	// used, e.g. because of the complexity setting or sample rate.
-	st.silkMode.UseDTX = b2i(st.useDTX != 0 && !(info.Valid != 0 || isSilence))
+	st.silkMode.UseDTX = b2i(st.useDTX != 0 && (info.Valid == 0 && !isSilence))
 
 	// Mode selection depending on application and signal type.
 	if st.application == ApplicationRestrictedSilk {
@@ -1352,7 +1444,10 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 			frameToCelt := toCelt != 0 && i == nbFrames-1
 			frameRedundancy := redundancy != 0 && (frameToCelt || (toCelt == 0 && i == 0))
 
-			currMax := min(int(bitrateToBits(st.bitrateBps, st.fs, int32(encFrameSize))/8), maxLenSum/nbFrames)
+			currMax := min(
+				int(bitrateToBits(st.bitrateBps, st.fs, int32(encFrameSize))/8),
+				maxLenSum/nbFrames,
+			)
 			currMax = min(maxLenSum-totSize, currMax)
 			if analysisReadPosBak != -1 {
 				// Get analysis for current frame.
@@ -1393,9 +1488,21 @@ func (st *Encoder) encodeNative(pcm []float32, frameSize int, data []byte, outDa
 // at most 60 ms (20 ms outside SILK-only mode) into
 // data[:origMaxDataBytes] and returns the packet length or a negative
 // error code.
-func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, origMaxDataBytes int,
-	floatAPI bool, info *analysisInfo,
-	isSilence bool, redundancy, celtToSilk, prefill int, equivRate int32, toCelt int) int {
+// keep reference mode decisions, entropy budgets and retry state in one flow
+//
+//revive:disable-next-line:cognitive-complexity
+func (st *Encoder) encodeFrameNative(
+	pcm []float32,
+	frameSize int,
+	data []byte,
+	origMaxDataBytes int,
+	floatAPI bool,
+	info *analysisInfo,
+	isSilence bool,
+	redundancy, celtToSilk, prefill int,
+	equivRate int32,
+	toCelt int,
+) int {
 	var (
 		celtMode        *celt.Mode
 		ret             int
@@ -1419,7 +1526,8 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 		celtMode = celtEnc.Mode()
 	}
 	currBandwidth := st.bandwidth
-	if st.application == ApplicationRestrictedLowdelay || st.application == ApplicationRestrictedCelt ||
+	if st.application == ApplicationRestrictedLowdelay ||
+		st.application == ApplicationRestrictedCelt ||
 		st.application == ApplicationRestrictedSilk {
 		delayComp = 0
 	} else {
@@ -1461,7 +1569,12 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 	}
 
 	if redundancy != 0 {
-		redundancyBytes = computeRedundancyBytes(maxDataBytes, st.bitrateBps, frameRate, st.streamChannels)
+		redundancyBytes = computeRedundancyBytes(
+			maxDataBytes,
+			st.bitrateBps,
+			frameRate,
+			st.streamChannels,
+		)
 		if redundancyBytes == 0 {
 			redundancy = 0
 		}
@@ -1481,7 +1594,10 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 	enc.Init(payload[:origMaxDataBytes-1])
 
 	pcmBuf := sc.pcmBuf[:(totalBuffer+frameSize)*ch]
-	copy(pcmBuf, st.delayBuffer[(st.encoderBuffer-totalBuffer)*ch:(st.encoderBuffer-totalBuffer)*ch+totalBuffer*ch])
+	copy(
+		pcmBuf,
+		st.delayBuffer[(st.encoderBuffer-totalBuffer)*ch:(st.encoderBuffer-totalBuffer)*ch+totalBuffer*ch],
+	)
 
 	if st.mode == modeCeltOnly {
 		hpFreqSmth1 = silkLin2log(variableHPMinCutoffHz) << 8
@@ -1537,10 +1653,11 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			var maskSum float32
 			end := 17
 			srate := int16(16000)
-			if st.bandwidth == BandwidthNarrowband {
+			switch st.bandwidth {
+			case BandwidthNarrowband:
 				end = 13
 				srate = 8000
-			} else if st.bandwidth == BandwidthMediumband {
+			case BandwidthMediumband:
 				end = 15
 				srate = 12000
 			}
@@ -1570,11 +1687,12 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 		st.silkMode.PayloadSizeMs = 1000 * frameSize / int(st.fs)
 		st.silkMode.NChannelsAPI = int32(ch)
 		st.silkMode.NChannelsInternal = int32(st.streamChannels)
-		if currBandwidth == BandwidthNarrowband {
+		switch currBandwidth {
+		case BandwidthNarrowband:
 			st.silkMode.DesiredInternalSampleRate = 8000
-		} else if currBandwidth == BandwidthMediumband {
+		case BandwidthMediumband:
 			st.silkMode.DesiredInternalSampleRate = 12000
-		} else {
+		default:
 			st.silkMode.DesiredInternalSampleRate = 16000
 		}
 		if st.mode == modeHybrid {
@@ -1593,11 +1711,17 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			}
 			if effectiveMaxRate < 8000 {
 				st.silkMode.MaxInternalSampleRate = 12000
-				st.silkMode.DesiredInternalSampleRate = min(12000, st.silkMode.DesiredInternalSampleRate)
+				st.silkMode.DesiredInternalSampleRate = min(
+					12000,
+					st.silkMode.DesiredInternalSampleRate,
+				)
 			}
 			if effectiveMaxRate < 7000 {
 				st.silkMode.MaxInternalSampleRate = 8000
-				st.silkMode.DesiredInternalSampleRate = min(8000, st.silkMode.DesiredInternalSampleRate)
+				st.silkMode.DesiredInternalSampleRate = min(
+					8000,
+					st.silkMode.DesiredInternalSampleRate,
+				)
 			}
 		}
 
@@ -1623,7 +1747,9 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			// can still produce a constant bitrate without wasting bits.
 			if st.mode == modeHybrid {
 				// Allow SILK to steal up to 25% of the remaining bits.
-				otherBits := int16(max(0, int32(st.silkMode.MaxBits)-st.silkMode.BitRate*int32(frameSize)/st.fs))
+				otherBits := int16(
+					max(0, int32(st.silkMode.MaxBits)-st.silkMode.BitRate*int32(frameSize)/st.fs),
+				)
 				st.silkMode.MaxBits = max(0, st.silkMode.MaxBits-int(otherBits)*3/4)
 				st.silkMode.UseCBR = 0
 			}
@@ -1632,9 +1758,14 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			if st.mode == modeHybrid {
 				// Compute SILK bitrate corresponding to the max total
 				// bits available.
-				maxBitRate := computeSilkRateForHybrid(int(int32(st.silkMode.MaxBits)*st.fs/int32(frameSize)),
-					currBandwidth, b2i(int(st.fs) == 50*frameSize), st.useVBR, st.silkMode.LBRRCoded,
-					st.streamChannels)
+				maxBitRate := computeSilkRateForHybrid(
+					int(int32(st.silkMode.MaxBits)*st.fs/int32(frameSize)),
+					currBandwidth,
+					b2i(int(st.fs) == 50*frameSize),
+					st.useVBR,
+					st.silkMode.LBRRCoded,
+					st.streamChannels,
+				)
 				st.silkMode.MaxBits = int(bitrateToBits(int32(maxBitRate), st.fs, int32(frameSize)))
 			}
 		}
@@ -1654,13 +1785,29 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			db := st.delayBuffer[prefillOffset:]
 			gainFade(db, db, 0, 1, celtMode.Overlap, int(st.fs/400), ch, celtMode.Window, st.fs)
 			clear(st.delayBuffer[:prefillOffset])
-			silkEnc.Encode(&st.silkMode, st.delayBuffer[:], st.encoderBuffer, nil, &zero, prefill, activity)
+			silkEnc.Encode(
+				&st.silkMode,
+				st.delayBuffer[:],
+				st.encoderBuffer,
+				nil,
+				&zero,
+				prefill,
+				activity,
+			)
 			// Prevent a second switch in the real encode call.
 			st.silkMode.OpusCanSwitch = 0
 		}
 
 		pcmSilk := pcmBuf[totalBuffer*ch:]
-		if r := silkEnc.Encode(&st.silkMode, pcmSilk, frameSize, enc, &nBytes, 0, activity); r != 0 {
+		if r := silkEnc.Encode(
+			&st.silkMode,
+			pcmSilk,
+			frameSize,
+			enc,
+			&nBytes,
+			0,
+			activity,
+		); r != 0 {
 			// Handle error.
 			return int(ErrInternalError)
 		}
@@ -1668,11 +1815,12 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 
 		// Extract SILK internal bandwidth for signaling in first byte.
 		if st.mode == modeSilkOnly {
-			if st.silkMode.InternalSampleRate == 8000 {
+			switch st.silkMode.InternalSampleRate {
+			case 8000:
 				currBandwidth = BandwidthNarrowband
-			} else if st.silkMode.InternalSampleRate == 12000 {
+			case 12000:
 				currBandwidth = BandwidthMediumband
-			} else if st.silkMode.InternalSampleRate == 16000 {
+			case 16000:
 				currBandwidth = BandwidthWideband
 			}
 		}
@@ -1691,7 +1839,12 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 		// FIXME: How do we allocate the redundancy for CBR?
 		if st.silkMode.OpusCanSwitch != 0 {
 			if st.application != ApplicationRestrictedSilk {
-				redundancyBytes = computeRedundancyBytes(maxDataBytes, st.bitrateBps, frameRate, st.streamChannels)
+				redundancyBytes = computeRedundancyBytes(
+					maxDataBytes,
+					st.bitrateBps,
+					frameRate,
+					st.streamChannels,
+				)
 				redundancy = b2i(redundancyBytes != 0)
 			}
 			celtToSilk = 0
@@ -1745,7 +1898,17 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 	// gain_fade() and stereo_fade() need to be after the buffer copying
 	// because we don't want any of this to affect the SILK part.
 	if (st.prevHBGain < 1 || hbGain < 1) && celtMode != nil {
-		gainFade(pcmBuf, pcmBuf, st.prevHBGain, hbGain, celtMode.Overlap, frameSize, ch, celtMode.Window, st.fs)
+		gainFade(
+			pcmBuf,
+			pcmBuf,
+			st.prevHBGain,
+			hbGain,
+			celtMode.Overlap,
+			frameSize,
+			ch,
+			celtMode.Window,
+			st.fs,
+		)
 	}
 	st.prevHBGain = hbGain
 	if st.mode != modeHybrid || st.streamChannels == 1 {
@@ -1765,7 +1928,17 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			g1 *= 1.0 / 16384
 			g2 *= 1.0 / 16384
 			if celtMode != nil {
-				stereoFade(pcmBuf, pcmBuf, g1, g2, celtMode.Overlap, frameSize, ch, celtMode.Window, st.fs)
+				stereoFade(
+					pcmBuf,
+					pcmBuf,
+					g1,
+					g2,
+					celtMode.Overlap,
+					frameSize,
+					ch,
+					celtMode.Window,
+					st.fs,
+				)
 			}
 			st.hybridStereoWidthQ14 = int16(st.silkMode.StereoWidthQ14)
 		}
@@ -1829,7 +2002,13 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 		celtEnc.SetStartBand(0)
 		celtEnc.SetVBR(0)
 		celtEnc.SetBitrate(BitrateMax)
-		err := celtEnc.EncodeWithEC(pcmBuf, int(st.fs/200), payload[nbComprBytes:nbComprBytes+redundancyBytes], redundancyBytes, nil)
+		err := celtEnc.EncodeWithEC(
+			pcmBuf,
+			int(st.fs/200),
+			payload[nbComprBytes:nbComprBytes+redundancyBytes],
+			redundancyBytes,
+			nil,
+		)
 		if err < 0 {
 			return int(ErrInternalError)
 		}
@@ -1856,7 +2035,8 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 				celtEnc.SetBitrate(st.bitrateBps)
 			}
 		}
-		if st.mode != st.prevMode && st.prevMode > 0 && st.application != ApplicationRestrictedCelt {
+		if st.mode != st.prevMode && st.prevMode > 0 &&
+			st.application != ApplicationRestrictedCelt {
 			celtEnc.Reset()
 
 			// Prefilling.
@@ -1872,7 +2052,10 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 			}
 			// Put CELT->SILK redundancy data in the right place.
 			if redundancy != 0 && celtToSilk != 0 && st.mode == modeHybrid && nbComprBytes != ret {
-				copy(payload[ret:ret+redundancyBytes], payload[nbComprBytes:nbComprBytes+redundancyBytes])
+				copy(
+					payload[ret:ret+redundancyBytes],
+					payload[nbComprBytes:nbComprBytes+redundancyBytes],
+				)
 				nbComprBytes = ret + redundancyBytes
 			}
 		}
@@ -1901,7 +2084,13 @@ func (st *Encoder) encodeFrameNative(pcm []float32, frameSize int, data []byte, 
 		// size) by just adding a function that prefills the buffer.
 		celtEnc.EncodeWithEC(pcmBuf[ch*(frameSize-N2-N4):], N4, sc.dummy[:], 2, nil)
 
-		err := celtEnc.EncodeWithEC(pcmBuf[ch*(frameSize-N2):], N2, payload[nbComprBytes:nbComprBytes+redundancyBytes], redundancyBytes, nil)
+		err := celtEnc.EncodeWithEC(
+			pcmBuf[ch*(frameSize-N2):],
+			N2,
+			payload[nbComprBytes:nbComprBytes+redundancyBytes],
+			redundancyBytes,
+			nil,
+		)
 		if err < 0 {
 			return int(ErrInternalError)
 		}
@@ -2283,7 +2472,8 @@ func (st *Encoder) Signal() int { return st.signalType }
 // sampling rate (OPUS_GET_LOOKAHEAD). Decoders see this much delay.
 func (st *Encoder) Lookahead() int {
 	value := int(st.fs / 400)
-	if st.application != ApplicationRestrictedLowdelay && st.application != ApplicationRestrictedCelt {
+	if st.application != ApplicationRestrictedLowdelay &&
+		st.application != ApplicationRestrictedCelt {
 		value += st.delayCompensation
 	}
 	return value

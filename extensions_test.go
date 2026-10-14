@@ -78,12 +78,12 @@ func fmtIter(base []byte, it *ExtensionIterator) string {
 // data must start at the beginning of its backing array.
 func extReport(data []byte, nbFrames int) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "c=%d", PacketExtensionsCount(data, nbFrames))
+	_, _ = fmt.Fprintf(&sb, "c=%d", PacketExtensionsCount(data, nbFrames))
 
 	exts := make([]ExtensionData, 64)
 	n := int32(64)
 	ret := opusPacketExtensionsParse(data, exts, &n, nbFrames)
-	fmt.Fprintf(&sb, " p=%d/%d:", ret, n)
+	_, _ = fmt.Fprintf(&sb, " p=%d/%d:", ret, n)
 	if ret >= 0 {
 		for i := 0; i < int(n); i++ {
 			sb.WriteString(fmtExt(data, exts[i]) + ",")
@@ -92,14 +92,14 @@ func extReport(data []byte, nbFrames int) string {
 
 	n1 := int32(1)
 	ret = opusPacketExtensionsParse(data, exts, &n1, nbFrames)
-	fmt.Fprintf(&sb, " p1=%d/%d", ret, n1)
+	_, _ = fmt.Fprintf(&sb, " p1=%d/%d", ret, n1)
 
 	var nbFrameExts [48]int
 	count := PacketExtensionsCountExt(data, nbFrameExts[:], nbFrames)
-	fmt.Fprintf(&sb, " ce=%d:%s", count, joinInts(nbFrameExts[:nbFrames]))
+	_, _ = fmt.Fprintf(&sb, " ce=%d:%s", count, joinInts(nbFrameExts[:nbFrames]))
 	n = 64
 	ret = opusPacketExtensionsParseExt(data, exts, &n, nbFrameExts[:], nbFrames)
-	fmt.Fprintf(&sb, " pe=%d/%d:", ret, n)
+	_, _ = fmt.Fprintf(&sb, " pe=%d/%d:", ret, n)
 	if ret >= 0 {
 		for i := 0; i < int(n); i++ {
 			sb.WriteString(fmtExt(data, exts[i]) + ",")
@@ -129,7 +129,7 @@ func extReport(data []byte, nbFrames int) string {
 		var e ExtensionData
 		ret := it.find(&e, id)
 		if ret <= 0 {
-			fmt.Fprintf(&sb, "r%d", ret)
+			_, _ = fmt.Fprintf(&sb, "r%d", ret)
 			break
 		}
 		sb.WriteString(fmtExt(data, e) + ",")

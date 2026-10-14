@@ -44,7 +44,11 @@ func downmixFloat(px analysisPCM, y []float32, subframe, offset, c1, c2, c int) 
 			}
 		}
 	}
-	// Cap signal to +6 dBFS to avoid problems in the analysis.
+	capAnalysisSignal(y)
+}
+
+// capAnalysisSignal limits analysis input to +6 dBFS and removes NaNs.
+func capAnalysisSignal(y []float32) {
 	for j := range y {
 		if y[j] < -65536 {
 			y[j] = -65536

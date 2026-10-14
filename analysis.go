@@ -141,7 +141,12 @@ func silkResamplerDown2HP(s *[3]float32, out, in []float32, inLen int) float32 {
 
 // downmixAndResample is downmix_and_resample, with S = tonal.downmixState
 // and Fs = tonal.fs as at every C call site.
-func (tonal *tonalityAnalysisState) downmixAndResample(downmix downmixFunc, x analysisPCM, y []float32, subframe, offset, c1, c2, c int) float32 {
+func (tonal *tonalityAnalysisState) downmixAndResample(
+	downmix downmixFunc,
+	x analysisPCM,
+	y []float32,
+	subframe, offset, c1, c2, c int,
+) float32 {
 	var ret float32
 	if subframe == 0 {
 		return 0
@@ -187,6 +192,9 @@ func (tonal *tonalityAnalysisState) downmixAndResample(downmix downmixFunc, x an
 }
 
 // tonalityGetInfo is tonality_get_info.
+// preserve reference spectral thresholds and classifier history updates
+//
+//revive:disable-next-line:cognitive-complexity
 func tonalityGetInfo(tonal *tonalityAnalysisState, infoOut *analysisInfo, length int) {
 	pos := tonal.readPos
 	currLookahead := tonal.writePos - tonal.readPos
@@ -327,8 +335,14 @@ func tonalityGetInfo(tonal *tonalityAnalysisState, infoOut *analysisInfo, length
 			break
 		}
 		posVad := tonal.info[vpos].ActivityProbability
-		probMin = dsp.Min16((probAvg-float32(transitionPenalty*(vadProb-posVad)))/probCount, probMin)
-		probMax = dsp.Max16((probAvg+float32(transitionPenalty*(vadProb-posVad)))/probCount, probMax)
+		probMin = dsp.Min16(
+			(probAvg-float32(transitionPenalty*(vadProb-posVad)))/probCount,
+			probMin,
+		)
+		probMax = dsp.Max16(
+			(probAvg+float32(transitionPenalty*(vadProb-posVad)))/probCount,
+			probMax,
+		)
 		probCount += dsp.Max16(.1, posVad)
 		probAvg += float32(dsp.Max16(.1, posVad) * tonal.info[mpos].MusicProb)
 	}
@@ -389,7 +403,16 @@ func cSqrt(x float32) float32 {
 }
 
 // tonalityAnalysis is tonality_analysis.
-func tonalityAnalysis(tonal *tonalityAnalysisState, celtMode *celt.Mode, x analysisPCM, length, offset, c1, c2, c, lsbDepth int, downmix downmixFunc) {
+// preserve reference spectral thresholds and classifier history updates
+//
+//revive:disable-next-line:cognitive-complexity
+func tonalityAnalysis(
+	tonal *tonalityAnalysisState,
+	celtMode *celt.Mode,
+	x analysisPCM,
+	length, offset, c1, c2, c, lsbDepth int,
+	downmix downmixFunc,
+) {
 	const (
 		n  = 480
 		n2 = 240
@@ -441,11 +464,12 @@ func tonalityAnalysis(tonal *tonalityAnalysisState, celtMode *celt.Mode, x analy
 		alphaE2 = 1
 	}
 
-	if tonal.fs == 48000 {
+	switch tonal.fs {
+	case 48000:
 		// len and offset are now at 24 kHz.
 		length /= 2
 		offset /= 2
-	} else if tonal.fs == 16000 {
+	case 16000:
 		length = 3 * length / 2
 		offset = 3 * offset / 2
 	}
@@ -691,7 +715,8 @@ func tonalityAnalysis(tonal *tonalityAnalysisState, celtMode *celt.Mode, x analy
 		// 2) above the PCM quantization noise floor
 		// We use b+1 because the first CELT band isn't included in tbands[].
 		width := float32(bandEnd - bandStart)
-		if float32(e*1e9) > maxE && (em > float32(float32(3*noiseFloor)*width) || e > float32(noiseFloor*width)) {
+		if float32(e*1e9) > maxE &&
+			(em > float32(float32(3*noiseFloor)*width) || e > float32(noiseFloor*width)) {
 			bandwidth = b + 1
 		}
 		// Check if the band is masked (see below).
@@ -718,7 +743,8 @@ func tonalityAnalysis(tonal *tonalityAnalysisState, celtMode *celt.Mode, x analy
 		aboveMaxPitch += e
 		tonal.meanE[b] = dsp.Max32(float32((1-alphaE2)*tonal.meanE[b]), e)
 		em := dsp.Max32(e, tonal.meanE[b])
-		if em > float32(float32(float32(3*noiseRatio)*noiseFloor)*160) || e > float32(float32(noiseRatio*noiseFloor)*160) {
+		if em > float32(float32(float32(3*noiseRatio)*noiseFloor)*160) ||
+			e > float32(float32(noiseRatio*noiseFloor)*160) {
 			bandwidth = 20
 		}
 		// Check if the band is masked (see below).
@@ -804,7 +830,11 @@ func tonalityAnalysis(tonal *tonalityAnalysisState, celtMode *celt.Mode, x analy
 
 	if tonal.count > 5 {
 		for i := 0; i < 9; i++ {
-			tonal.std[i] = float32((1-alpha)*tonal.std[i]) + float32(float32(alpha*features[i])*features[i])
+			tonal.std[i] = float32(
+				(1-alpha)*tonal.std[i],
+			) + float32(
+				float32(alpha*features[i])*features[i],
+			)
 		}
 	}
 	for i := 0; i < 4; i++ {
@@ -845,7 +875,8 @@ func tonalityAnalysis(tonal *tonalityAnalysisState, celtMode *celt.Mode, x analy
 // (celt_mode->mdct.kfft[0]).
 func runAnalysis(analysis *tonalityAnalysisState, celtMode *celt.Mode, pcm analysisPCM,
 	analysisFrameSize, frameSize, c1, c2, c int, fs int32, lsbDepth int,
-	downmix downmixFunc, info *analysisInfo) {
+	downmix downmixFunc, info *analysisInfo,
+) {
 	analysisFrameSize -= analysisFrameSize & 1
 	if !pcm.isNil() {
 		fs50 := int(fs / 50)
@@ -855,7 +886,18 @@ func runAnalysis(analysis *tonalityAnalysisState, celtMode *celt.Mode, pcm analy
 		pcmLen := analysisFrameSize - analysis.analysisOffset
 		offset := analysis.analysisOffset
 		for pcmLen > 0 {
-			tonalityAnalysis(analysis, celtMode, pcm, dsp.IMin(fs50, pcmLen), offset, c1, c2, c, lsbDepth, downmix)
+			tonalityAnalysis(
+				analysis,
+				celtMode,
+				pcm,
+				dsp.IMin(fs50, pcmLen),
+				offset,
+				c1,
+				c2,
+				c,
+				lsbDepth,
+				downmix,
+			)
 			offset += fs50
 			pcmLen -= fs50
 		}

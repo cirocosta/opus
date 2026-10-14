@@ -73,7 +73,12 @@ func TestDecoderCTLs(t *testing.T) {
 	if _, err := d.Decode(nil, pcm, 0, false); err != ErrBadArg {
 		t.Errorf("frame size 0: %v", err)
 	}
-	if _, err := d.Decode([]byte{0xFC, 0xFF, 0xFE}, pcm[:10], 960, false); err != ErrBufferTooSmall {
+	if _, err := d.Decode(
+		[]byte{0xFC, 0xFF, 0xFE},
+		pcm[:10],
+		960,
+		false,
+	); err != ErrBufferTooSmall {
 		t.Errorf("short pcm: %v", err)
 	}
 	// A code 3 packet without a frame count byte is invalid.
@@ -152,15 +157,15 @@ func TestDecoderAllocs(t *testing.T) {
 		p := pkts[i%len(pkts)]
 		switch i % 7 {
 		case 3:
-			d.Decode(nil, i16, 960, false)
+			_, _ = d.Decode(nil, i16, 960, false)
 		case 4:
-			d.Decode(p, i16, 960, true)
+			_, _ = d.Decode(p, i16, 960, true)
 		case 5:
-			d.Decode(nil, i16, 480, false)
+			_, _ = d.Decode(nil, i16, 480, false)
 		case 6:
-			d.Decode24(p, i24, 5760, false)
+			_, _ = d.Decode24(p, i24, 5760, false)
 		default:
-			d.DecodeFloat(p, f32, 5760, false)
+			_, _ = d.DecodeFloat(p, f32, 5760, false)
 		}
 		i++
 	}
@@ -183,9 +188,9 @@ func TestDecoderAllocs(t *testing.T) {
 	j := 0
 	msStep := func() {
 		if j%5 == 2 {
-			pd.Decode(nil, out, 960, false)
+			_, _ = pd.Decode(nil, out, 960, false)
 		} else {
-			pd.Decode(s.pkts[j%len(s.pkts)], out, 5760, false)
+			_, _ = pd.Decode(s.pkts[j%len(s.pkts)], out, 5760, false)
 		}
 		j++
 	}

@@ -5,7 +5,8 @@ package opus
 
 // ExtensionData is one Opus padding extension. It ports
 // opus_extension_data. Data holds the extension payload; for parsed
-// extensions it is a slice of the packet padding.
+// extensions it shares the packet padding's backing array. Mutating or
+// reusing that array also changes the parsed payload.
 type ExtensionData struct {
 	ID    int
 	Frame int
@@ -17,15 +18,21 @@ type ExtensionData struct {
 // to the next extension and returns the length of the remaining
 // extensions, or -1 on error. A "Repeat These Extensions" extension (ID 2)
 // does not advance past the repeated extension payloads.
+// keep the reference extension grammar and repeat-frame cursor transitions together
+//
+//revive:disable-next-line:cognitive-complexity
 func skipExtensionPayload(data []byte, pos *int, length int32,
-	headerSize *int32, idByte int, trailingShortLen int32) int32 {
+	headerSize *int32, idByte int, trailingShortLen int32,
+) int32 {
 	p := *pos
 	var hs int32
 	id := idByte >> 1
 	l := int32(idByte & 1)
 	if (id == 0 && l == 1) || id == 2 {
-		// Nothing to do.
-	} else if id > 0 && id < 32 {
+		*headerSize = 0
+		return length
+	}
+	if id > 0 && id < 32 {
 		if length < l {
 			return -1
 		}
@@ -151,6 +158,9 @@ func (it *ExtensionIterator) SetFrameMax(frameMax int) {
 // nextRepeat ports opus_extension_iterator_next_repeat. It returns 1 if a
 // repeated extension is found, a negative error code, or 0 when the
 // repetition is done.
+// keep the reference extension grammar and repeat-frame cursor transitions together
+//
+//revive:disable-next-line:cognitive-complexity
 func (it *ExtensionIterator) nextRepeat(ext *ExtensionData) int {
 	var headerSize int32
 	for ; it.repeatFrame < it.nbFrames; it.repeatFrame++ {
@@ -209,6 +219,9 @@ func (it *ExtensionIterator) nextRepeat(ext *ExtensionData) int {
 
 // next ports opus_extension_iterator_next. It returns 1 if an extension is
 // found, 0 when there are no more, or a negative error code.
+// keep the reference extension grammar and repeat-frame cursor transitions together
+//
+//revive:disable-next-line:cognitive-complexity
 func (it *ExtensionIterator) next(ext *ExtensionData) int {
 	var headerSize int32
 	if it.currLen < 0 {
@@ -360,7 +373,8 @@ func PacketExtensionsCountExt(data []byte, nbFrameExts []int, nbFrames int) int 
 // *nbExtensions is the capacity of extensions; on success it is the number
 // of extensions found. It returns 0 or a negative error code.
 func opusPacketExtensionsParse(data []byte, extensions []ExtensionData,
-	nbExtensions *int32, nbFrames int) int {
+	nbExtensions *int32, nbFrames int,
+) int {
 	var it ExtensionIterator
 	var ret int
 	it.Init(data, nbFrames)
@@ -394,7 +408,8 @@ func PacketExtensionsParse(data []byte, extensions []ExtensionData, nbFrames int
 
 // opusPacketExtensionsParseExt ports opus_packet_extensions_parse_ext.
 func opusPacketExtensionsParseExt(data []byte, extensions []ExtensionData,
-	nbExtensions *int32, nbFrameExts []int, nbFrames int) int {
+	nbExtensions *int32, nbFrameExts []int, nbFrames int,
+) int {
 	var it ExtensionIterator
 	var ext ExtensionData
 	var nbFramesCum [49]int32
@@ -431,7 +446,8 @@ func opusPacketExtensionsParseExt(data []byte, extensions []ExtensionData,
 // output of PacketExtensionsCountExt. It ports
 // opus_packet_extensions_parse_ext.
 func PacketExtensionsParseExt(data []byte, extensions []ExtensionData,
-	nbFrameExts []int, nbFrames int) (int, error) {
+	nbFrameExts []int, nbFrames int,
+) (int, error) {
 	n := int32(len(extensions))
 	if ret := opusPacketExtensionsParseExt(data, extensions, &n, nbFrameExts, nbFrames); ret < 0 {
 		return 0, Error(ret)
@@ -441,6 +457,9 @@ func PacketExtensionsParseExt(data []byte, extensions []ExtensionData,
 
 // writeExtensionPayload ports write_extension_payload. data may be nil to
 // only compute the size.
+// keep the reference extension grammar and repeat-frame cursor transitions together
+//
+//revive:disable-next-line:cognitive-complexity
 func writeExtensionPayload(data []byte, length, pos int32, ext *ExtensionData, last bool) int32 {
 	extLen := int32(len(ext.Data))
 	if ext.ID < 32 {
@@ -506,8 +525,12 @@ func writeExtension(data []byte, length, pos int32, ext *ExtensionData, last boo
 // may be nil to only compute the size; otherwise it must have room for
 // length bytes. It returns the number of bytes written or a negative error
 // code.
+// keep the reference extension grammar and repeat-frame cursor transitions together
+//
+//revive:disable-next-line:cognitive-complexity
 func opusPacketExtensionsGenerate(data []byte, length int32,
-	extensions []ExtensionData, nbFrames int, pad bool) int32 {
+	extensions []ExtensionData, nbFrames int, pad bool,
+) int32 {
 	var frameMinIdx, frameMaxIdx, frameRepeatIdx [48]int32
 	nbExtensions := int32(len(extensions))
 	currFrame := 0
@@ -672,7 +695,12 @@ func opusPacketExtensionsGenerate(data []byte, length int32,
 // nbFrames frames (at most 48) into data and returns the number of bytes
 // written. If pad is true, it fills all of data, prepending padding bytes.
 // It ports opus_packet_extensions_generate.
-func PacketExtensionsGenerate(data []byte, extensions []ExtensionData, nbFrames int, pad bool) (int, error) {
+func PacketExtensionsGenerate(
+	data []byte,
+	extensions []ExtensionData,
+	nbFrames int,
+	pad bool,
+) (int, error) {
 	ret := opusPacketExtensionsGenerate(data, int32(len(data)), extensions, nbFrames, pad)
 	if ret < 0 {
 		return 0, Error(ret)

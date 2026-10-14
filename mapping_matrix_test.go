@@ -55,7 +55,10 @@ func genMatrixInputs(r *rand.Rand) [][]byte {
 		w.u8(out)
 		n := in * fs
 		for range n {
-			w.b = binary.LittleEndian.AppendUint32(w.b, math.Float32bits(float32(int32(r.Uint32())>>8)/(1<<23)))
+			w.b = binary.LittleEndian.AppendUint32(
+				w.b,
+				math.Float32bits(float32(int32(r.Uint32())>>8)/(1<<23)),
+			)
 		}
 		for range n {
 			w.u16(int(int16(r.Uint32())))
@@ -68,7 +71,10 @@ func genMatrixInputs(r *rand.Rand) [][]byte {
 			w.b = binary.LittleEndian.AppendUint32(w.b, uint32(v))
 		}
 		for range n {
-			w.b = binary.LittleEndian.AppendUint32(w.b, math.Float32bits(float32(r.IntN(2516582)-1258291)/(1<<20)))
+			w.b = binary.LittleEndian.AppendUint32(
+				w.b,
+				math.Float32bits(float32(r.IntN(2516582)-1258291)/(1<<20)),
+			)
 		}
 		recs = append(recs, w.b)
 	}

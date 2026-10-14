@@ -299,7 +299,7 @@ func TestRepacketizerAPI(t *testing.T) {
 func FuzzPacket(f *testing.F) {
 	f.Add([]byte{0x03, 0xc2, 0x01, 0xaa, 0xbb}, uint16(10), uint8(2))
 	f.Add([]byte{0xfb, 0x43, 0x03, 0x41, 0x05, 0x01}, uint16(300), uint8(1))
-	f.Fuzz(func(t *testing.T, p []byte, extra uint16, ns uint8) {
+	f.Fuzz(func(_ *testing.T, p []byte, extra uint16, ns uint8) {
 		fmtPacketInfo(p)
 		var padding []byte
 		var size [48]int16
@@ -309,15 +309,15 @@ func FuzzPacket(f *testing.F) {
 		}
 		buf := make([]byte, len(p)+int(extra))
 		copy(buf, p)
-		PacketPad(buf, len(p))
-		PacketUnpad(buf)
+		_ = PacketPad(buf, len(p))
+		_, _ = PacketUnpad(buf)
 		copy(buf, p)
-		MultistreamPacketPad(buf, len(p), int(ns%5))
-		MultistreamPacketUnpad(buf, int(ns%5))
+		_ = MultistreamPacketPad(buf, len(p), int(ns%5))
+		_, _ = MultistreamPacketUnpad(buf, int(ns%5))
 		rp := NewRepacketizer()
-		rp.Cat(p)
-		rp.Cat(p)
-		rp.Out(buf)
+		_ = rp.Cat(p)
+		_ = rp.Cat(p)
+		_, _ = rp.Out(buf)
 		rp.outRangeImpl(0, rp.NbFrames(), buf, true, true, []ExtensionData{{ID: 40, Data: p}})
 	})
 }

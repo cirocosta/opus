@@ -91,8 +91,10 @@ type pcmBufs struct {
 }
 
 func newPCMBufs(fmt, n int) *pcmBufs {
-	return &pcmBufs{fmt: fmt, i16: make([]int16, n), i24: make([]int32, n),
-		f32: make([]float32, n), b: make([]byte, 4*n)}
+	return &pcmBufs{
+		fmt: fmt, i16: make([]int16, n), i24: make([]int32, n),
+		f32: make([]float32, n), b: make([]byte, 4*n),
+	}
 }
 
 func (p *pcmBufs) hash(n int) uint64 {
@@ -227,8 +229,20 @@ func runDecCase(w io.Writer, path string, o decOpts) error {
 			} else {
 				ret = decode(data, maxf, false)
 			}
-			fmt.Fprintf(w, "%d %d %d %08x %d %d %d %016x\n", idx, kind, ret, dec.FinalRange(),
-				dec.LastPacketDuration(), dec.Bandwidth(), dec.Pitch(), p.hash(ret*o.ch))
+			if _, err := fmt.Fprintf(
+				w,
+				"%d %d %d %08x %d %d %d %016x\n",
+				idx,
+				kind,
+				ret,
+				dec.FinalRange(),
+				dec.LastPacketDuration(),
+				dec.Bandwidth(),
+				dec.Pitch(),
+				p.hash(ret*o.ch),
+			); err != nil {
+				return err
+			}
 		}
 		if !lost {
 			lostCount = 0
@@ -256,8 +270,10 @@ func readMSStream(path string) (*msStream, error) {
 	if len(d) < 12 || string(d[:4]) != "OPMS" {
 		return nil, fmt.Errorf("%s: bad header", path)
 	}
-	s := &msStream{projection: d[4] == 1, fs: int(binary.BigEndian.Uint32(d[5:])),
-		ch: int(d[9]), streams: int(d[10]), coupled: int(d[11])}
+	s := &msStream{
+		projection: d[4] == 1, fs: int(binary.BigEndian.Uint32(d[5:])),
+		ch: int(d[9]), streams: int(d[10]), coupled: int(d[11]),
+	}
 	d = d[12:]
 	if s.projection {
 		n := int(binary.BigEndian.Uint32(d))
@@ -334,8 +350,10 @@ func runMSDecCase(w io.Writer, path string, o decOpts) error {
 		default:
 			ret = retCode(dec.DecodeFloat(data, p.f32, fsz, false))
 		}
-		fmt.Fprintf(w, "%d %d %08x %d %d %016x\n", idx, ret, dec.FinalRange(),
-			dec.LastPacketDuration(), dec.Bandwidth(), p.hash(ret*s.ch))
+		if _, err := fmt.Fprintf(w, "%d %d %08x %d %d %016x\n", idx, ret, dec.FinalRange(),
+			dec.LastPacketDuration(), dec.Bandwidth(), p.hash(ret*s.ch)); err != nil {
+			return err
+		}
 		if idx == o.reset {
 			dec.Reset()
 		}
@@ -354,7 +372,7 @@ func TestDecoderGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	vdir := os.Getenv("OPUS_TESTVECTORS")
 	sc := bufio.NewScanner(f)
 	n := 0
@@ -403,7 +421,13 @@ func TestDecoderGolden(t *testing.T) {
 			if got != wantHash || gotLines != wantLines {
 				t.Errorf("got %d lines %s, want %d lines %s", gotLines, got, wantLines, wantHash)
 				if dir := os.Getenv("OPUS_DEC_DUMP"); dir != "" {
-					os.WriteFile(filepath.Join(dir, fmt.Sprintf("c%d.go.txt", n)), []byte(out), 0o644)
+					if err := os.WriteFile(
+						filepath.Join(dir, fmt.Sprintf("c%d.go.txt", n)),
+						[]byte(out),
+						0o644,
+					); err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 		})
@@ -495,7 +519,7 @@ func TestRFC8251(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		line := sc.Text()
@@ -504,7 +528,15 @@ func TestRFC8251(t *testing.T) {
 		}
 		var name, want string
 		var rate, ch, nbytes int
-		if _, err := fmt.Sscanf(line, "%s %d %d %d %s", &name, &rate, &ch, &nbytes, &want); err != nil {
+		if _, err := fmt.Sscanf(
+			line,
+			"%s %d %d %d %s",
+			&name,
+			&rate,
+			&ch,
+			&nbytes,
+			&want,
+		); err != nil {
 			t.Fatal(err)
 		}
 		t.Run(fmt.Sprintf("%s_%d_%d", name, rate, ch), func(t *testing.T) {
@@ -519,7 +551,13 @@ func TestRFC8251(t *testing.T) {
 			pcm := demoDecode(t, pkts, rngs, rate, ch, h)
 			got := hex.EncodeToString(h.Sum(nil))[:32]
 			if got != want || 2*len(pcm) != nbytes {
-				t.Errorf("output %d bytes %s, want %d bytes %s (scalar opus_demo)", 2*len(pcm), got, nbytes, want)
+				t.Errorf(
+					"output %d bytes %s, want %d bytes %s (scalar opus_demo)",
+					2*len(pcm),
+					got,
+					nbytes,
+					want,
+				)
 			}
 			if rate != 48000 {
 				return
@@ -546,5 +584,46 @@ func TestRFC8251(t *testing.T) {
 	}
 	if err := sc.Err(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMSDecoderOmittedChannels(t *testing.T) {
+	const rate, frame = 48000, 960
+	encoder, err := NewMSEncoder(rate, 2, 2, 0, []byte{0, 1}, ApplicationAudio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	full, err := NewMSDecoder(rate, 2, 2, 0, []byte{0, 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	omitted, err := NewMSDecoder(rate, 1, 2, 0, []byte{0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pcm := make([]int16, 2*frame)
+	for i := 0; i < frame; i++ {
+		pcm[2*i] = int16((i%337 - 168) * 80)
+		pcm[2*i+1] = int16((i%193 - 96) * 90)
+	}
+	packet := make([]byte, 3000)
+	n, err := encoder.Encode(pcm, frame, packet)
+	if err != nil {
+		t.Fatal(err)
+	}
+	all, one := make([]int16, 2*frame), make([]int16, frame)
+	if _, err := full.Decode(packet[:n], all, frame, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := omitted.Decode(packet[:n], one, frame, false); err != nil {
+		t.Fatal(err)
+	}
+	for i, sample := range one {
+		if sample != all[2*i] {
+			t.Fatalf("sample %d: got %d, want %d", i, sample, all[2*i])
+		}
+	}
+	if omitted.FinalRange() != full.FinalRange() {
+		t.Fatal("omitted channels changed the entropy range")
 	}
 }

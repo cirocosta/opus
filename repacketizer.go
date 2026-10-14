@@ -96,8 +96,12 @@ func (rp *Repacketizer) NbFrames() int {
 // outRangeImpl ports opus_repacketizer_out_range_impl. The output buffer is
 // data and maxlen is len(data). It returns the packet length or a negative
 // error code.
+// preserve the reference packet header, padding and frame-offset grammar
+//
+//revive:disable-next-line:cognitive-complexity
 func (rp *Repacketizer) outRangeImpl(begin, end int, data []byte,
-	selfDelimited, pad bool, extensions []ExtensionData) int32 {
+	selfDelimited, pad bool, extensions []ExtensionData,
+) int32 {
 	var totSize int32
 	maxlen := int32(len(data))
 	var onesBegin, onesEnd int32
@@ -151,7 +155,8 @@ func (rp *Repacketizer) outRangeImpl(begin, end int, data []byte,
 	}
 
 	ptr := 0
-	if count == 1 {
+	switch count {
+	case 1:
 		// Code 0.
 		totSize += int32(length[0]) + 1
 		if totSize > maxlen {
@@ -159,7 +164,7 @@ func (rp *Repacketizer) outRangeImpl(begin, end int, data []byte,
 		}
 		data[ptr] = rp.toc & 0xFC
 		ptr++
-	} else if count == 2 {
+	case 2:
 		if length[1] == length[0] {
 			// Code 1.
 			totSize += 2*int32(length[0]) + 1
@@ -314,7 +319,8 @@ func (rp *Repacketizer) Out(data []byte) (int, error) {
 // and the padded packet fills data[:newLen]. It returns the new length, OK
 // when length == newLen, or a negative error code.
 func opusPacketPadImpl(data []byte, length, newLen int32, pad bool,
-	extensions []ExtensionData) int32 {
+	extensions []ExtensionData,
+) int32 {
 	var rp Repacketizer
 	return packetPadScratch(data, length, newLen, pad, extensions, &rp, nil)
 }
@@ -324,7 +330,8 @@ func opusPacketPadImpl(data []byte, length, newLen int32, pad bool,
 // packet, reallocated when shorter than length. It lets the encoder pad
 // packets without allocating.
 func packetPadScratch(data []byte, length, newLen int32, pad bool,
-	extensions []ExtensionData, rp *Repacketizer, cp []byte) int32 {
+	extensions []ExtensionData, rp *Repacketizer, cp []byte,
+) int32 {
 	if length < 1 {
 		return int32(ErrBadArg)
 	}
@@ -438,6 +445,9 @@ func MultistreamPacketPad(data []byte, length, nbStreams int) error {
 
 // opusMultistreamPacketUnpad ports opus_multistream_packet_unpad. It
 // returns the new length or a negative error code.
+// preserve the reference packet header, padding and frame-offset grammar
+//
+//revive:disable-next-line:cognitive-complexity
 func opusMultistreamPacketUnpad(data []byte, nbStreams int) int32 {
 	var toc byte
 	var size [48]int16

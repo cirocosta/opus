@@ -29,7 +29,10 @@ func projectionDecoderGetSize(channels, streams, coupledStreams int) int32 {
 // (opus_projection_decoder_create). demixingMatrix is the demixing
 // matrix as stored in the Ogg Opus header: (streams+coupledStreams) *
 // channels little-endian int16 values in column-major order.
-func NewProjectionDecoder(fs, channels, streams, coupledStreams int, demixingMatrix []byte) (*ProjectionDecoder, error) {
+func NewProjectionDecoder(
+	fs, channels, streams, coupledStreams int,
+	demixingMatrix []byte,
+) (*ProjectionDecoder, error) {
 	// Allocate space for the projection decoder.
 	if projectionDecoderGetSize(channels, streams, coupledStreams) == 0 {
 		return nil, ErrAllocFail
@@ -43,7 +46,10 @@ func NewProjectionDecoder(fs, channels, streams, coupledStreams int, demixingMat
 }
 
 // Init initializes a projection decoder (opus_projection_decoder_init).
-func (st *ProjectionDecoder) Init(fs, channels, streams, coupledStreams int, demixingMatrix []byte) error {
+func (st *ProjectionDecoder) Init(
+	fs, channels, streams, coupledStreams int,
+	demixingMatrix []byte,
+) error {
 	var mapping [255]byte
 
 	// Verify supplied matrix size.
@@ -78,7 +84,12 @@ func (st *ProjectionDecoder) Init(fs, channels, streams, coupledStreams int, dem
 
 // Decode decodes a projection packet to 16-bit PCM
 // (opus_projection_decode). The arguments are as for MSDecoder.Decode.
-func (st *ProjectionDecoder) Decode(data []byte, pcm []int16, frameSize int, decodeFEC bool) (int, error) {
+func (st *ProjectionDecoder) Decode(
+	data []byte,
+	pcm []int16,
+	frameSize int,
+	decodeFEC bool,
+) (int, error) {
 	if !st.ms.checkPCM(len(pcm), frameSize) {
 		return 0, ErrBufferTooSmall
 	}
@@ -88,7 +99,12 @@ func (st *ProjectionDecoder) Decode(data []byte, pcm []int16, frameSize int, dec
 
 // Decode24 decodes a projection packet to 24-bit PCM in int32 samples
 // (opus_projection_decode24).
-func (st *ProjectionDecoder) Decode24(data []byte, pcm []int32, frameSize int, decodeFEC bool) (int, error) {
+func (st *ProjectionDecoder) Decode24(
+	data []byte,
+	pcm []int32,
+	frameSize int,
+	decodeFEC bool,
+) (int, error) {
 	if !st.ms.checkPCM(len(pcm), frameSize) {
 		return 0, ErrBufferTooSmall
 	}
@@ -98,7 +114,12 @@ func (st *ProjectionDecoder) Decode24(data []byte, pcm []int32, frameSize int, d
 
 // DecodeFloat decodes a projection packet to float PCM
 // (opus_projection_decode_float).
-func (st *ProjectionDecoder) DecodeFloat(data []byte, pcm []float32, frameSize int, decodeFEC bool) (int, error) {
+func (st *ProjectionDecoder) DecodeFloat(
+	data []byte,
+	pcm []float32,
+	frameSize int,
+	decodeFEC bool,
+) (int, error) {
 	if !st.ms.checkPCM(len(pcm), frameSize) {
 		return 0, ErrBufferTooSmall
 	}

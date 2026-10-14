@@ -20,21 +20,21 @@ func vectorPacketLine(p, prev []byte) string {
 	buf := make([]byte, len(p)+300)
 	copy(buf, p)
 	ret := opusPacketUnpad(buf[:len(p)])
-	fmt.Fprintf(&sb, " unpad=%d:%016x", ret, fnvHash(buf[:max(ret, 0)]))
+	_, _ = fmt.Fprintf(&sb, " unpad=%d:%016x", ret, fnvHash(buf[:max(ret, 0)]))
 	copy(buf, p)
 	pret := opusPacketPad(buf, int32(len(p)), int32(len(p)+300))
-	fmt.Fprintf(&sb, " pad=%d:%016x", pret, fnvHash(buf))
+	_, _ = fmt.Fprintf(&sb, " pad=%d:%016x", pret, fnvHash(buf))
 
 	rp := NewRepacketizer()
 	sb.WriteString(" cat=")
 	if prev != nil {
-		fmt.Fprintf(&sb, "%d.", rp.catImpl(prev, false))
+		_, _ = fmt.Fprintf(&sb, "%d.", rp.catImpl(prev, false))
 	}
-	fmt.Fprintf(&sb, "%d", rp.catImpl(p, false))
+	_, _ = fmt.Fprintf(&sb, "%d", rp.catImpl(p, false))
 	out := make([]byte, 3100)
 	for i := 0; i < rp.NbFrames(); i++ {
 		ret := rp.outRangeImpl(i, rp.NbFrames(), out, false, false, nil)
-		fmt.Fprintf(&sb, ",%d:%016x", ret, fnvHash(out[:max(ret, 0)]))
+		_, _ = fmt.Fprintf(&sb, ",%d:%016x", ret, fnvHash(out[:max(ret, 0)]))
 	}
 	return sb.String()
 }
@@ -51,7 +51,7 @@ func TestVectors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		var name string
@@ -75,7 +75,7 @@ func TestVectors(t *testing.T) {
 			}
 			p := append([]byte(nil), data[:ln]...)
 			data = data[ln:]
-			fmt.Fprintf(h, "%s\n", vectorPacketLine(p, prev))
+			_, _ = fmt.Fprintf(h, "%s\n", vectorPacketLine(p, prev))
 			prev = p
 			n++
 		}

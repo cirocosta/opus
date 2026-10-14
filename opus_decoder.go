@@ -142,7 +142,16 @@ func b2i(b bool) int {
 // decodeFrame ports opus_decode_frame. data holds at least length bytes
 // (more may follow, as with the C pointer). It returns the number of
 // samples per channel written to pcm or a negative error code.
-func (st *Decoder) decodeFrame(data []byte, length int, pcm []float32, frameSize int, decodeFEC bool) int {
+// keep reference loss, FEC and mode-transition state updates in decode order
+//
+//revive:disable-next-line:cognitive-complexity
+func (st *Decoder) decodeFrame(
+	data []byte,
+	length int,
+	pcm []float32,
+	frameSize int,
+	decodeFEC bool,
+) int {
 	silkDec := &st.silkDec
 	celtDec := &st.celtDec
 	ch := st.channels
@@ -402,7 +411,7 @@ func (st *Decoder) decodeFrame(data []byte, length int, pcm []float32, frameSize
 		}
 		// For hybrid -> SILK transitions, we let the CELT MDCT do a
 		// fade-out by decoding a silence frame.
-		if st.prevMode == modeHybrid && !(redundancy && celtToSilk && st.prevRedundancy) {
+		if st.prevMode == modeHybrid && (!redundancy || !celtToSilk || !st.prevRedundancy) {
 			celtDec.SetStartBand(0)
 			celtDec.DecodeWithEC(silencePacket, pcm, F2_5, nil, celtAccum)
 		}
@@ -435,7 +444,15 @@ func (st *Decoder) decodeFrame(data []byte, length int, pcm []float32, frameSize
 	if transition {
 		if audiosize >= F5 {
 			copy(pcm[:ch*F2_5], pcmTransition[:ch*F2_5])
-			smoothFade(pcmTransition[ch*F2_5:], pcm[ch*F2_5:], pcm[ch*F2_5:], F2_5, ch, window, st.fs)
+			smoothFade(
+				pcmTransition[ch*F2_5:],
+				pcm[ch*F2_5:],
+				pcm[ch*F2_5:],
+				F2_5,
+				ch,
+				window,
+				st.fs,
+			)
 		} else {
 			// Not enough time to do a clean transition, but we do it
 			// anyway. This will not preserve amplitude perfectly and may
@@ -473,8 +490,12 @@ func (st *Decoder) decodeFrame(data []byte, length int, pcm []float32, frameSize
 // decodeNative ports opus_decode_native. data is nil or empty for a lost
 // packet. packetOffset, if not nil, receives the number of bytes of data
 // used (for self-delimited multistream packets).
+// keep reference loss, FEC and mode-transition state updates in decode order
+//
+//revive:disable-next-line:cognitive-complexity
 func (st *Decoder) decodeNative(data []byte, pcm []float32, frameSize int, decodeFEC bool,
-	selfDelimited bool, packetOffset *int32, softClip bool) int {
+	selfDelimited bool, packetOffset *int32, softClip bool,
+) int {
 	ch := st.channels
 	// For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms.
 	if (decodeFEC || len(data) == 0) && frameSize%int(st.fs/400) != 0 {
@@ -661,7 +682,12 @@ func (st *Decoder) Decode24(data []byte, pcm []int32, frameSize int, decodeFEC b
 // (opus_decode_float). The arguments are as for Decode, except that pcm
 // must hold frameSize samples per channel. The output is not
 // soft-clipped.
-func (st *Decoder) DecodeFloat(data []byte, pcm []float32, frameSize int, decodeFEC bool) (int, error) {
+func (st *Decoder) DecodeFloat(
+	data []byte,
+	pcm []float32,
+	frameSize int,
+	decodeFEC bool,
+) (int, error) {
 	if frameSize <= 0 {
 		return 0, ErrBadArg
 	}

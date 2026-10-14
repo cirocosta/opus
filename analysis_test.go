@@ -148,8 +148,10 @@ type analysisRunner struct {
 func newAnalysisRunner(src []int16, c analysisCfg) *analysisRunner {
 	dec := 48000 / c.fs
 	n := len(src) / 2 / dec
-	r := &analysisRunner{n: n, cfg: c,
-		b16: make([]int16, n*c.c), bf: make([]float32, n*c.c), b24: make([]int32, n*c.c)}
+	r := &analysisRunner{
+		n: n, cfg: c,
+		b16: make([]int16, n*c.c), bf: make([]float32, n*c.c), b24: make([]int32, n*c.c),
+	}
 	for i := 0; i < n; i++ {
 		l, rr := int(src[2*i*dec]), int(src[2*i*dec+1])
 		ch := [3]int{l, rr, (l - rr) >> 1}
@@ -295,7 +297,7 @@ func TestAnalysisVectors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	srcs := map[string][]int16{}
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
@@ -340,7 +342,17 @@ func TestAnalysisAllocs(t *testing.T) {
 	src := analysisSynthSource()
 	for _, dm := range []int{0, 1, 2} {
 		for _, fs := range []int{48000, 24000, 16000} {
-			c := analysisCfg{fs: fs, c: 2, c1: 0, c2: -2, dm: dm, gain: 1, lsb: 16, fsz: fs / 50, maxcalls: 1}
+			c := analysisCfg{
+				fs:       fs,
+				c:        2,
+				c1:       0,
+				c2:       -2,
+				dm:       dm,
+				gain:     1,
+				lsb:      16,
+				fsz:      fs / 50,
+				maxcalls: 1,
+			}
 			r := newAnalysisRunner(src, c)
 			mode := celt.StaticMode()
 			tonalityAnalysisInit(&r.st, int32(fs))

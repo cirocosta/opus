@@ -87,7 +87,12 @@ func TestEncoderAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	if enc.Channels() != 2 || enc.SampleRate() != 48000 || enc.Lookahead() != 120+192 {
-		t.Errorf("Channels %d SampleRate %d Lookahead %d", enc.Channels(), enc.SampleRate(), enc.Lookahead())
+		t.Errorf(
+			"Channels %d SampleRate %d Lookahead %d",
+			enc.Channels(),
+			enc.SampleRate(),
+			enc.Lookahead(),
+		)
 	}
 	if _, err := enc.Encode(make([]int16, 959*2), 960, make([]byte, 100)); err != ErrBadArg {
 		t.Errorf("short pcm: %v", err)
@@ -103,7 +108,8 @@ func TestEncoderAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ms.Streams() != 4 || ms.CoupledStreams() != 2 || string(ms.Mapping()) != "\x00\x04\x01\x02\x03\x05" {
+	if ms.Streams() != 4 || ms.CoupledStreams() != 2 ||
+		string(ms.Mapping()) != "\x00\x04\x01\x02\x03\x05" {
 		t.Errorf("layout %d %d %v", ms.Streams(), ms.CoupledStreams(), ms.Mapping())
 	}
 	if e, err := ms.EncoderState(3); err != nil || e != &ms.encoders[3] || e.lfe != 1 {
@@ -126,7 +132,12 @@ func TestEncoderAPI(t *testing.T) {
 	if err := pe.DemixingMatrix(make([]byte, 3)); err != ErrBadArg {
 		t.Errorf("DemixingMatrix(short): %v", err)
 	}
-	if _, err := NewProjectionAmbisonicsEncoder(48000, 5, 3, ApplicationAudio); err != ErrAllocFail {
+	if _, err := NewProjectionAmbisonicsEncoder(
+		48000,
+		5,
+		3,
+		ApplicationAudio,
+	); err != ErrAllocFail {
 		t.Errorf("projection 5 channels: %v", err)
 	}
 }

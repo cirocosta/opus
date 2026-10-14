@@ -24,7 +24,10 @@ func subOffset(base, sub []byte) int {
 func genParseInputs(r *rand.Rand) [][]byte {
 	recs := [][]byte{
 		{},
-		{0x00}, {0x01}, {0x02}, {0x03},
+		{0x00},
+		{0x01},
+		{0x02},
+		{0x03},
 		{0x01, 0xaa},                   // code 1, odd length
 		{0x02, 0xfc},                   // code 2, truncated 2-byte size
 		{0x02, 0x05, 1, 2},             // code 2, size larger than data
@@ -99,12 +102,12 @@ func fmtPacketInfo(p []byte) string {
 	var sb strings.Builder
 	sb.WriteString("sd0:" + fmtParse(p, false) + " sd1:" + fmtParse(p, true))
 	if len(p) == 0 {
-		fmt.Fprintf(&sb, " bw- ch- nf%d ns48%d ns8%d spf- lbrr-",
+		_, _ = fmt.Fprintf(&sb, " bw- ch- nf%d ns48%d ns8%d spf- lbrr-",
 			opusPacketGetNbFrames(p), opusPacketGetNbSamples(p, 48000),
 			opusPacketGetNbSamples(p, 8000))
 		return sb.String()
 	}
-	fmt.Fprintf(&sb, " bw%d ch%d nf%d ns48%d ns8%d spf%d.%d lbrr%d",
+	_, _ = fmt.Fprintf(&sb, " bw%d ch%d nf%d ns48%d ns8%d spf%d.%d lbrr%d",
 		opusPacketGetBandwidth(p[0]), opusPacketGetNbChannels(p[0]),
 		opusPacketGetNbFrames(p), opusPacketGetNbSamples(p, 48000),
 		opusPacketGetNbSamples(p, 8000), opusPacketGetSamplesPerFrame(p[0], 48000),

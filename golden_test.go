@@ -75,7 +75,7 @@ func readGoldenLines(t *testing.T, name string) []string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	zr, err := gzip.NewReader(f)
 	if err != nil {
 		t.Fatal(err)
@@ -462,7 +462,7 @@ func joinInts[T ~int | ~int16 | ~int32](v []T) string {
 		if i > 0 {
 			sb.WriteByte('.')
 		}
-		fmt.Fprintf(&sb, "%d", x)
+		_, _ = fmt.Fprintf(&sb, "%d", x)
 	}
 	return sb.String()
 }

@@ -109,16 +109,13 @@ func validateAmbisonics(nbChannels int, nbStreams, nbCoupledStreams *int) bool {
 func validateEncoderLayout(layout *channelLayout) bool {
 	for s := 0; s < layout.nbStreams; s++ {
 		if s < layout.nbCoupledStreams {
-			if getLeftChannel(layout, s, -1) == -1 {
+			if getLeftChannel(layout, s, -1) == -1 || getRightChannel(layout, s, -1) == -1 {
 				return false
 			}
-			if getRightChannel(layout, s, -1) == -1 {
-				return false
-			}
-		} else {
-			if getMonoChannel(layout, s, -1) == -1 {
-				return false
-			}
+			continue
+		}
+		if getMonoChannel(layout, s, -1) == -1 {
+			return false
 		}
 	}
 	return true
@@ -127,19 +124,20 @@ func validateEncoderLayout(layout *channelLayout) bool {
 // channelPos ports channel_pos: the position of each channel in the mix
 // (0 don't mix, 1 left, 2 center, 3 right).
 func channelPos(channels int, pos *[8]int) {
-	if channels == 4 {
+	switch channels {
+	case 4:
 		pos[0] = 1
 		pos[1] = 3
 		pos[2] = 1
 		pos[3] = 3
-	} else if channels == 3 || channels == 5 || channels == 6 {
+	case 3, 5, 6:
 		pos[0] = 1
 		pos[1] = 2
 		pos[2] = 3
 		pos[3] = 1
 		pos[4] = 3
 		pos[5] = 0
-	} else if channels == 7 {
+	case 7:
 		pos[0] = 1
 		pos[1] = 2
 		pos[2] = 3
@@ -147,7 +145,7 @@ func channelPos(channels int, pos *[8]int) {
 		pos[4] = 3
 		pos[5] = 2
 		pos[6] = 0
-	} else if channels == 8 {
+	case 8:
 		pos[0] = 1
 		pos[1] = 2
 		pos[2] = 3
@@ -187,9 +185,19 @@ func logSum(a, b float32) float32 {
 
 // surroundAnalysis ports surround_analysis: it computes the band
 // signal-to-mask ratios of every channel in bandLogE (21 per channel).
-func (st *MSEncoder) surroundAnalysis(celtMode *celt.Mode, pcm analysisPCM, bandLogE []float32,
-	mem, preemphMem []float32, length, overlap, channels int, rate int32, copyChannelIn copyChannelInFunc,
-	matrix *mappingMatrix) {
+// keep per-channel band masking and overlap-history updates in reference order
+//
+//revive:disable-next-line:cognitive-complexity
+func (st *MSEncoder) surroundAnalysis(
+	celtMode *celt.Mode,
+	pcm analysisPCM,
+	bandLogE []float32,
+	mem, preemphMem []float32,
+	length, overlap, channels int,
+	rate int32,
+	copyChannelIn copyChannelInFunc,
+	_ *mappingMatrix,
+) {
 	var pos [8]int
 	var bandE [21]float32
 	var maskLogE [3][21]float32
@@ -223,7 +231,16 @@ func (st *MSEncoder) surroundAnalysis(celtMode *celt.Mode, pcm analysisPCM, band
 		nbFrames := frameSize / freqSize
 		copy(in[:overlap], mem[c*overlap:c*overlap+overlap])
 		copyChannelIn(x, 1, pcm, channels, c, length, nil)
-		celt.Preemphasis(x, in[overlap:], frameSize, 1, upsample, celtMode.Preemph[:], &preemphMem[c], false)
+		celt.Preemphasis(
+			x,
+			in[overlap:],
+			frameSize,
+			1,
+			upsample,
+			celtMode.Preemph[:],
+			&preemphMem[c],
+			false,
+		)
 		{
 			sum := dsp.CeltInnerProd(in, in, frameSize+overlap)
 			// This should filter out both NaNs and ridiculous signals
@@ -265,15 +282,16 @@ func (st *MSEncoder) surroundAnalysis(celtMode *celt.Mode, pcm analysisPCM, band
 		for i := 19; i >= 0; i-- {
 			ble[i] = dsp.Max32(ble[i], ble[i+1]-2)
 		}
-		if pos[c] == 1 {
+		switch pos[c] {
+		case 1:
 			for i := 0; i < 21; i++ {
 				maskLogE[0][i] = logSum(maskLogE[0][i], ble[i])
 			}
-		} else if pos[c] == 3 {
+		case 3:
 			for i := 0; i < 21; i++ {
 				maskLogE[2][i] = logSum(maskLogE[2][i], ble[i])
 			}
-		} else if pos[c] == 2 {
+		case 2:
 			for i := 0; i < 21; i++ {
 				maskLogE[0][i] = logSum(maskLogE[0][i], ble[i]-.5)
 				maskLogE[2][i] = logSum(maskLogE[2][i], ble[i]-.5)
@@ -305,14 +323,6 @@ func (st *MSEncoder) surroundAnalysis(celtMode *celt.Mode, pcm analysisPCM, band
 	}
 }
 
-// validMSArgs checks the stream arguments of
-// opus_multistream_encoder_init.
-func validMSArgs(channels, streams, coupledStreams int) bool {
-	return !(channels > 255 || channels < 1 || coupledStreams > streams ||
-		streams < 1 || coupledStreams < 0 || streams > 255-coupledStreams ||
-		streams+coupledStreams > channels)
-}
-
 // NewMSEncoder allocates and initializes a multistream encoder
 // (opus_multistream_encoder_create). channels is the number of input
 // channels (1 to 255), streams the number of streams, coupledStreams the
@@ -321,7 +331,11 @@ func validMSArgs(channels, streams, coupledStreams int) bool {
 // are the left and right channels of the coupled streams, the following
 // values are the mono streams, and 255 drops the channel. application is
 // as for NewEncoder.
-func NewMSEncoder(fs, channels, streams, coupledStreams int, mapping []byte, application int) (*MSEncoder, error) {
+func NewMSEncoder(
+	fs, channels, streams, coupledStreams int,
+	mapping []byte,
+	application int,
+) (*MSEncoder, error) {
 	if !validMSArgs(channels, streams, coupledStreams) {
 		return nil, ErrBadArg
 	}
@@ -333,15 +347,23 @@ func NewMSEncoder(fs, channels, streams, coupledStreams int, mapping []byte, app
 }
 
 // Init initializes a multistream encoder (opus_multistream_encoder_init).
-func (st *MSEncoder) Init(fs, channels, streams, coupledStreams int, mapping []byte, application int) error {
+func (st *MSEncoder) Init(
+	fs, channels, streams, coupledStreams int,
+	mapping []byte,
+	application int,
+) error {
 	st.lfeStream = -1
 	return st.initImpl(fs, channels, streams, coupledStreams, mapping, application, mappingTypeNone)
 }
 
 // initImpl ports opus_multistream_encoder_init_impl. The caller sets
 // lfeStream first for surround mappings.
+// keep mapping validation, subencoder setup and buffer reuse in one lifecycle
+//
+//revive:disable-next-line:cognitive-complexity
 func (st *MSEncoder) initImpl(fs, channels, streams, coupledStreams int, mapping []byte,
-	application int, mappingType int) error {
+	application int, mappingType int,
+) error {
 	if !validMSArgs(channels, streams, coupledStreams) {
 		return ErrBadArg
 	}
@@ -434,65 +456,98 @@ func NewMSSurroundEncoder(fs, channels, mappingFamily, application int) (*MSEnco
 // InitSurround initializes a multistream encoder for a channel mapping
 // family (opus_multistream_surround_encoder_init).
 func (st *MSEncoder) InitSurround(fs, channels, mappingFamily, application int) error {
-	var streams, coupledStreams int
-	var mapping [255]byte
-	var mappingType int
-
 	if channels > 255 || channels < 1 {
 		return ErrBadArg
 	}
-	lfeStream := -1
-	if mappingFamily == 0 {
-		if channels == 1 {
-			streams = 1
-			coupledStreams = 0
-			mapping[0] = 0
-		} else if channels == 2 {
-			streams = 1
-			coupledStreams = 1
-			mapping[0] = 0
-			mapping[1] = 1
-		} else {
-			return ErrUnimplemented
-		}
-	} else if mappingFamily == 1 && channels <= 8 && channels >= 1 {
-		streams = vorbisMappings[channels-1].nbStreams
-		coupledStreams = vorbisMappings[channels-1].nbCoupledStreams
-		for i := 0; i < channels; i++ {
-			mapping[i] = vorbisMappings[channels-1].mapping[i]
-		}
-		if channels >= 6 {
-			lfeStream = streams - 1
-		}
-	} else if mappingFamily == 255 {
-		streams = channels
-		coupledStreams = 0
-		for i := 0; i < channels; i++ {
-			mapping[i] = byte(i)
-		}
-	} else if mappingFamily == 2 {
-		if !validateAmbisonics(channels, &streams, &coupledStreams) {
-			return ErrBadArg
-		}
-		for i := 0; i < streams-coupledStreams; i++ {
-			mapping[i] = byte(i + coupledStreams*2)
-		}
-		for i := 0; i < coupledStreams*2; i++ {
-			mapping[i+(streams-coupledStreams)] = byte(i)
-		}
-	} else {
-		return ErrUnimplemented
+	config, err := surroundMapping(channels, mappingFamily)
+	if err != nil {
+		return err
 	}
+	st.lfeStream = config.lfeStream
+	return st.initImpl(fs, channels, config.layout.nbStreams,
+		config.layout.nbCoupledStreams, config.layout.mapping[:channels],
+		application, config.mappingType)
+}
 
-	if channels > 2 && mappingFamily == 1 {
-		mappingType = mappingTypeSurround
-	} else if mappingFamily == 2 {
-		mappingType = mappingTypeAmbisonics
-	} else {
-		mappingType = mappingTypeNone
+// surroundConfig separates family-specific channel mapping from encoder state.
+type surroundConfig struct {
+	layout                 channelLayout
+	lfeStream, mappingType int
+}
+
+// surroundMapping requires a channel count from 1 to 255.
+func surroundMapping(channels, family int) (surroundConfig, error) {
+	switch family {
+	case 0:
+		if channels > 2 {
+			return surroundConfig{}, ErrUnimplemented
+		}
+		return identitySurroundMapping(channels, 1, channels-1), nil
+	case 1:
+		if channels > 8 {
+			return surroundConfig{}, ErrUnimplemented
+		}
+		return vorbisSurroundMapping(channels), nil
+	case 255:
+		return identitySurroundMapping(channels, channels, 0), nil
+	case 2:
+		return ambisonicSurroundMapping(channels)
+	default:
+		return surroundConfig{}, ErrUnimplemented
 	}
-	st.lfeStream = lfeStream
-	return st.initImpl(fs, channels, streams, coupledStreams, mapping[:channels], application, mappingType)
+}
+
+func identitySurroundMapping(channels, streams, coupled int) surroundConfig {
+	config := surroundConfig{
+		layout: channelLayout{
+			nbChannels:       channels,
+			nbStreams:        streams,
+			nbCoupledStreams: coupled,
+		},
+		lfeStream: -1,
+	}
+	for i := 0; i < channels; i++ {
+		config.layout.mapping[i] = byte(i)
+	}
+	return config
+}
+
+func vorbisSurroundMapping(channels int) surroundConfig {
+	mapping := &vorbisMappings[channels-1]
+	config := surroundConfig{
+		layout: channelLayout{
+			nbChannels: channels, nbStreams: mapping.nbStreams,
+			nbCoupledStreams: mapping.nbCoupledStreams,
+		},
+		lfeStream: -1,
+	}
+	copy(config.layout.mapping[:channels], mapping.mapping[:channels])
+	if channels >= 6 {
+		config.lfeStream = mapping.nbStreams - 1
+	}
+	if channels > 2 {
+		config.mappingType = mappingTypeSurround
+	}
+	return config
+}
+
+func ambisonicSurroundMapping(channels int) (surroundConfig, error) {
+	config := surroundConfig{
+		layout:    channelLayout{nbChannels: channels},
+		lfeStream: -1, mappingType: mappingTypeAmbisonics,
+	}
+	layout := &config.layout
+	if !validateAmbisonics(channels, &layout.nbStreams, &layout.nbCoupledStreams) {
+		return surroundConfig{}, ErrBadArg
+	}
+	mono := layout.nbStreams - layout.nbCoupledStreams
+	for i := 0; i < mono; i++ {
+		layout.mapping[i] = byte(i + layout.nbCoupledStreams*2)
+	}
+	for i := 0; i < layout.nbCoupledStreams*2; i++ {
+		layout.mapping[i+mono] = byte(i)
+	}
+	return config, nil
 }
 
 // surroundRateAllocation ports surround_rate_allocation.
@@ -507,11 +562,12 @@ func (st *MSEncoder) surroundRateAllocation(rate []int32, frameSize int, fs int3
 	// energy.
 	channelOffset := int32(40 * max(50, int(fs)/frameSize))
 
-	if st.bitrateBps == Auto {
+	switch st.bitrateBps {
+	case Auto:
 		bitrate = int32(nbNormal)*(channelOffset+fs+10000) + 8000*int32(nbLfe)
-	} else if st.bitrateBps == BitrateMax {
+	case BitrateMax:
 		bitrate = int32(nbNormal*750000 + nbLfe*128000)
-	} else {
+	default:
 		bitrate = st.bitrateBps
 	}
 
@@ -522,7 +578,9 @@ func (st *MSEncoder) surroundRateAllocation(rate []int32, frameSize int, fs int3
 
 	// We give each stream (coupled or uncoupled) a starting bitrate. This
 	// models the main saving of coupled channels over uncoupled.
-	streamOffset := (bitrate - channelOffset*int32(nbNormal) - lfeOffset*int32(nbLfe)) / int32(nbNormal) / 2
+	streamOffset := (bitrate - channelOffset*int32(nbNormal) - lfeOffset*int32(nbLfe)) / int32(
+		nbNormal,
+	) / 2
 	streamOffset = max(0, min(20000, streamOffset))
 
 	// Coupled streams get twice the mono rate after the offset is
@@ -533,7 +591,17 @@ func (st *MSEncoder) surroundRateAllocation(rate []int32, frameSize int, fs int3
 	const lfeRatio = 32
 
 	total := int64(nbUncoupled<<8 + coupledRatio*nbCoupled + nbLfe*lfeRatio)
-	channelRate := int32(256 * int64(bitrate-lfeOffset*int32(nbLfe)-streamOffset*int32(nbCoupled+nbUncoupled)-channelOffset*int32(nbNormal)) / total)
+	channelRate := int32(
+		256 * int64(
+			bitrate-lfeOffset*int32(
+				nbLfe,
+			)-streamOffset*int32(
+				nbCoupled+nbUncoupled,
+			)-channelOffset*int32(
+				nbNormal,
+			),
+		) / total,
+	)
 
 	for i := 0; i < st.layout.nbStreams; i++ {
 		if i < st.layout.nbCoupledStreams {
@@ -551,12 +619,17 @@ func (st *MSEncoder) ambisonicsRateAllocation(rate []int32, frameSize int, fs in
 	var totalRate int32
 	nbChannels := st.layout.nbStreams + st.layout.nbCoupledStreams
 
-	if st.bitrateBps == Auto {
-		totalRate = int32(st.layout.nbCoupledStreams+st.layout.nbStreams)*(fs+60*fs/int32(frameSize)) +
-			int32(st.layout.nbStreams)*15000
-	} else if st.bitrateBps == BitrateMax {
+	switch st.bitrateBps {
+	case Auto:
+		totalRate = int32(
+			st.layout.nbCoupledStreams+st.layout.nbStreams,
+		)*(fs+60*fs/int32(frameSize)) +
+			int32(
+				st.layout.nbStreams,
+			)*15000
+	case BitrateMax:
 		totalRate = int32(nbChannels * 750000)
-	} else {
+	default:
 		totalRate = st.bitrateBps
 	}
 
@@ -587,8 +660,19 @@ func (st *MSEncoder) rateAllocation(rate []int32, frameSize int) int32 {
 }
 
 // encodeNative ports opus_multistream_encode_native.
-func (st *MSEncoder) encodeNative(copyChannelIn copyChannelInFunc, pcm analysisPCM, analysisFrameSize int,
-	data []byte, lsbDepth int, downmix downmixFunc, floatAPI bool, matrix *mappingMatrix) int {
+// keep shared multistream budgets and channel state transitions in reference order
+//
+//revive:disable-next-line:cognitive-complexity
+func (st *MSEncoder) encodeNative(
+	copyChannelIn copyChannelInFunc,
+	pcm analysisPCM,
+	analysisFrameSize int,
+	data []byte,
+	lsbDepth int,
+	downmix downmixFunc,
+	floatAPI bool,
+	matrix *mappingMatrix,
+) int {
 	var celtMode *celt.Mode
 	maxDataBytes := len(data)
 
@@ -628,7 +712,10 @@ func (st *MSEncoder) encodeNative(copyChannelIn copyChannelInFunc, pcm analysisP
 
 	if !vbr {
 		if st.bitrateBps == Auto {
-			maxDataBytes = min(maxDataBytes, int((bitrateToBits(rateSum, fs, int32(frameSize))+4)/8))
+			maxDataBytes = min(
+				maxDataBytes,
+				int((bitrateToBits(rateSum, fs, int32(frameSize))+4)/8),
+			)
 		} else if st.bitrateBps != BitrateMax {
 			maxDataBytes = min(maxDataBytes, max(smallestPacket,
 				int((bitrateToBits(st.bitrateBps, fs, int32(frameSize))+4)/8)))
@@ -636,30 +723,31 @@ func (st *MSEncoder) encodeNative(copyChannelIn copyChannelInFunc, pcm analysisP
 	}
 	for s := 0; s < st.layout.nbStreams; s++ {
 		enc := &st.encoders[s]
-		enc.SetBitrate(int(bitrates[s]))
-		if st.mappingType == mappingTypeSurround {
+		_ = enc.SetBitrate(int(bitrates[s]))
+		switch st.mappingType {
+		case mappingTypeSurround:
 			equivRate := st.bitrateBps
 			if frameSize*50 < int(fs) {
 				equivRate -= int32(60 * (int(fs)/frameSize - 50) * st.layout.nbChannels)
 			}
 			nc := int32(st.layout.nbChannels)
 			if equivRate > 10000*nc {
-				enc.SetBandwidth(BandwidthFullband)
+				_ = enc.SetBandwidth(BandwidthFullband)
 			} else if equivRate > 7000*nc {
-				enc.SetBandwidth(BandwidthSuperwideband)
+				_ = enc.SetBandwidth(BandwidthSuperwideband)
 			} else if equivRate > 5000*nc {
-				enc.SetBandwidth(BandwidthWideband)
+				_ = enc.SetBandwidth(BandwidthWideband)
 			} else {
-				enc.SetBandwidth(BandwidthNarrowband)
+				_ = enc.SetBandwidth(BandwidthNarrowband)
 			}
 			if s < st.layout.nbCoupledStreams {
 				// To preserve the spatial image, force stereo CELT on
 				// coupled streams.
-				enc.SetForceMode(modeCeltOnly)
-				enc.SetForceChannels(2)
+				_ = enc.SetForceMode(modeCeltOnly)
+				_ = enc.SetForceChannels(2)
 			}
-		} else if st.mappingType == mappingTypeAmbisonics {
-			enc.SetForceMode(modeCeltOnly)
+		case mappingTypeAmbisonics:
+			_ = enc.SetForceMode(modeCeltOnly)
 		}
 	}
 
@@ -670,7 +758,8 @@ func (st *MSEncoder) encodeNative(copyChannelIn copyChannelInFunc, pcm analysisP
 		rp := &st.rp
 		rp.Reset()
 		enc := &st.encoders[s]
-		surround := st.mappingType == mappingTypeSurround && st.application != ApplicationRestrictedSilk
+		surround := st.mappingType == mappingTypeSurround &&
+			st.application != ApplicationRestrictedSilk
 		if s < st.layout.nbCoupledStreams {
 			left := getLeftChannel(&st.layout, s, -1)
 			right := getRightChannel(&st.layout, s, -1)
@@ -717,7 +806,7 @@ func (st *MSEncoder) encodeNative(copyChannelIn copyChannelInFunc, pcm analysisP
 			}
 		}
 		if !vbr && s == st.layout.nbStreams-1 {
-			enc.SetBitrate(int(bitsToBitrate(int32(currMax*8), fs, int32(frameSize))))
+			_ = enc.SetBitrate(int(bitsToBitrate(int32(currMax*8), fs, int32(frameSize))))
 		}
 		length := enc.encodeNative(buf, frameSize, st.tmpData[:max(currMax, 0)], currMax, lsbDepth,
 			pcm, analysisFrameSize, c1, c2, st.layout.nbChannels, downmix, floatAPI)
@@ -742,7 +831,13 @@ func (st *MSEncoder) encodeNative(copyChannelIn copyChannelInFunc, pcm analysisP
 }
 
 // copyChannelInFloat ports opus_copy_channel_in_float.
-func copyChannelInFloat(dst []float32, dstStride int, src analysisPCM, srcStride, srcChannel, frameSize int, _ *mappingMatrix) {
+func copyChannelInFloat(
+	dst []float32,
+	dstStride int,
+	src analysisPCM,
+	srcStride, srcChannel, frameSize int,
+	_ *mappingMatrix,
+) {
 	floatSrc := src.f32
 	for i := 0; i < frameSize; i++ {
 		dst[i*dstStride] = floatSrc[i*srcStride+srcChannel]
@@ -750,7 +845,13 @@ func copyChannelInFloat(dst []float32, dstStride int, src analysisPCM, srcStride
 }
 
 // copyChannelInShort ports opus_copy_channel_in_short.
-func copyChannelInShort(dst []float32, dstStride int, src analysisPCM, srcStride, srcChannel, frameSize int, _ *mappingMatrix) {
+func copyChannelInShort(
+	dst []float32,
+	dstStride int,
+	src analysisPCM,
+	srcStride, srcChannel, frameSize int,
+	_ *mappingMatrix,
+) {
 	shortSrc := src.i16
 	for i := 0; i < frameSize; i++ {
 		dst[i*dstStride] = dsp.Int16ToRes(shortSrc[i*srcStride+srcChannel])
@@ -758,7 +859,13 @@ func copyChannelInShort(dst []float32, dstStride int, src analysisPCM, srcStride
 }
 
 // copyChannelInInt24 ports opus_copy_channel_in_int24.
-func copyChannelInInt24(dst []float32, dstStride int, src analysisPCM, srcStride, srcChannel, frameSize int, _ *mappingMatrix) {
+func copyChannelInInt24(
+	dst []float32,
+	dstStride int,
+	src analysisPCM,
+	srcStride, srcChannel, frameSize int,
+	_ *mappingMatrix,
+) {
 	shortSrc := src.i32
 	for i := 0; i < frameSize; i++ {
 		dst[i*dstStride] = dsp.Int24ToRes(shortSrc[i*srcStride+srcChannel])

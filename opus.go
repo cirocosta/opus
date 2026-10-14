@@ -39,6 +39,9 @@ func opusLimit2Checkwithin1(samples []float32, cnt int) int {
 
 // opusPCMSoftClipImpl ports opus_pcm_soft_clip_impl. x holds n interleaved
 // samples for each of c channels; declipMem holds c values.
+// preserve the reference packet grammar and sample-boundary decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func opusPCMSoftClipImpl(x []float32, n, c int, declipMem []float32) {
 	if c < 1 || n < 1 || x == nil || declipMem == nil {
 		return
@@ -313,9 +316,13 @@ func opusPacketHasLBRR(packet []byte) int {
 // this packet (including padding), and padding the padding bytes (its
 // length is the C padding_len). size is required and must have room for 48
 // values. It returns the number of frames or a negative error code.
+// preserve the reference packet grammar and sample-boundary decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func opusPacketParseImpl(data []byte, selfDelimited bool, outTOC *byte,
 	frames [][]byte, size []int16, payloadOffset *int, packetOffset *int32,
-	padding *[]byte) int {
+	padding *[]byte,
+) int {
 	var count int
 	cbr := false
 	var pad int32
@@ -488,7 +495,8 @@ func opusPacketParseImpl(data []byte, selfDelimited bool, outTOC *byte,
 
 // opusPacketParse ports opus_packet_parse.
 func opusPacketParse(data []byte, outTOC *byte, frames [][]byte, size []int16,
-	payloadOffset *int) int {
+	payloadOffset *int,
+) int {
 	return opusPacketParseImpl(data, false, outTOC, frames, size,
 		payloadOffset, nil, nil)
 }
