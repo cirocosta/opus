@@ -1,0 +1,89 @@
+SILK goldens, generated from libopus 1.6.1 in the default configuration
+(plain ./configure: no DRED, deep PLC or OSCE; FLOAT_APPROX and
+ENABLE_RES24 on), built as the scalar reference (--disable-intrinsics
+--disable-rtcd --disable-asm, CFLAGS=-ffp-contract=off). The C drivers
+link .libs/libopus.a of that tree and compile with -include config.h,
+so that the control structures have its layout; they refuse to build
+against a tree with ENABLE_DEEP_PLC, ENABLE_OSCE or ENABLE_DRED.
+
+The drivers and the generator script are in tools/oracle/silk/
+(dec.c: decoder, enc.c and unit.c: encoder). Regenerate and compare
+with the committed files (see tools/oracle/README.md for the
+environment):
+
+  tools/oracle/silk/gen.sh       # compare
+  tools/oracle/silk/gen.sh -w    # also copy into this directory
+
+SILK decoder goldens
+--------------------
+
+The decoder driver does what runSILK in harness_test.go does: it splits
+an Opus stream into frames (opus_packet_parse), skips CELT-only frames
+(and calls silk_ResetDecoder on the next SILK frame), and decodes the
+SILK part of every SILK-only and hybrid frame with silk_Decode. Loss
+simulation: an LCG (x = x*1103515245 + 12345, lost when
+(x>>16) % 100 < 15) marks frames lost; loss mode 1 conceals them
+(lostFlag 1), loss mode 2 decodes the LBRR data of the next frame
+(lostFlag 2). Frames of 0 or 1 bytes (DTX) are concealed. Each
+silk_Decode call prints
+
+	frame lostFlag ret nSamplesOut finalRange prevPitchLag fnv1a64(float samples)
+
+The golden is the first 32 hex digits of the SHA-256 of all lines and
+the number of lines. Set SILK_DUMP_DIR when running TestVectors or
+TestMix to write the Go lines for diffing against the driver output
+($OPUS_WORK/silk/c/dec, $OPUS_WORK/silk/c/mix).
+
+vectors_golden.txt  RFC 8251 test vectors 02-06, 08-10, 12 (the ones with
+                    SILK or hybrid frames) at API rates 8/12/16/24/48 kHz,
+                    1 and 2 API channels, loss modes 0/1/2. Needs
+                    OPUS_TESTVECTORS.
+silk_mix.bit        40 KB stream in the test vector format, made by
+                    concatenating short opus_demo -e voip encodings (NB 10
+                    ms, MB 20 ms stereo, WB 40/60 ms, SWB hybrid, MB/NB
+                    40/60 ms, with -inbandfec and -dtx) of test vector
+                    audio. It covers LBRR, DTX/CNG and mode switches.
+mix_golden.txt      Goldens for silk_mix.bit, same configurations.
+mix_samples_16k_mono_plc.raw
+                    First 4096 output samples (int16 LE) of silk_mix.bit
+                    at 16 kHz mono with loss mode 1.
+
+SILK encoder goldens
+--------------------
+
+The encoder driver (enc.c) reads the PCM and the per-packet control
+script that TestWriteEncGoldenInputs writes (OPUS_GOLDEN_INPUTS=dir;
+add OPUS_TESTVECTORS for the vector scenarios). For each packet it fills
+silk_EncControlStruct from the script, calls silk_Encode on a fresh
+ec_enc over a maxBytes buffer (maxBits = 8 * maxBytes), calls
+ec_enc_done, and decodes the packet with silk_Decode (lostFlag 1 for
+empty packets). It prints, per packet,
+
+	idx prefill ret nBytes ec_tell finalRange switchReady internalSampleRate
+	inWBmodeWithoutVariableLP stereoWidth_Q14 signalType offset
+	allowBandwidthSwitch maxBits fnv1a64(buffer)
+
+and a final line "dec fnv1a64(decoded int16) nSamples". The golden is
+the line count and the first 32 hex digits of the SHA-256 of all
+lines ("s" lines), plus the first lines of each scenario ("l" lines).
+Set SILK_ENC_DUMP to write the Go lines ($OPUS_WORK/silk/c/enc has the
+C lines).
+
+enc_golden.txt          Synthetic input (enc_synth_test.go): fixed
+                        configurations over API rates 8-48 kHz, 1/2
+                        channels, 10-60 ms, complexity 0-10, FEC, DTX,
+                        CBR; a 22 s stream; and 24 streams with randomly
+                        varying controls (bitrate, complexity, frame
+                        size, FEC/loss, DTX, CBR, maxBits, internal rate
+                        limits, opusCanSwitch, stereo/mono with toMono,
+                        reducedDependency, prefill 1/2, VAD activity).
+enc_vectors_golden.txt  The decoded RFC 8251 test vectors
+                        (testvectorNN.dec) through four configurations
+                        each. Needs OPUS_TESTVECTORS.
+enc_unit_golden.txt     Hashes of silk_A2NLSF, silk_LPC_inverse_pred_gain_FLP,
+                        silk_residual_energy_covar_FLP, silk_schur_FLP and
+                        silk_autocorrelation_FLP on random inputs (unit.c).
+
+The encoder packets are the same in the default and the DNN-enabled
+libopus builds; only the final "dec" line (the decoder round trip, which
+conceals empty packets) differs in some scenarios.
