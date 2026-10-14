@@ -3,6 +3,9 @@
 package silk
 
 // decoderSetFs is silk_decoder_set_fs: set decoder sampling rate.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) decoderSetFs(fsKHz int, fsAPIHz int32) int {
 	ret := 0
 
@@ -43,11 +46,12 @@ func (psDec *decoderState) decoderSetFs(fsKHz int, fsAPIHz int32) int {
 				psDec.lpcOrder = maxLPCOrder
 				psDec.psNLSFCB = &nlsfCBWB
 			}
-			if fsKHz == 16 {
+			switch fsKHz {
+			case 16:
 				psDec.pitchLagLowBitsICDF = uniform8ICDF[:]
-			} else if fsKHz == 12 {
+			case 12:
 				psDec.pitchLagLowBitsICDF = uniform6ICDF[:]
-			} else if fsKHz == 8 {
+			case 8:
 				psDec.pitchLagLowBitsICDF = uniform4ICDF[:]
 			}
 			psDec.firstFrameAfterReset = 1

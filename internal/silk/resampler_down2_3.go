@@ -19,7 +19,13 @@ func resamplerDown2_3(s *[6]int32, out []int16, in []int16, inLen int) {
 		nSamplesIn = minInt(inLen, resamplerMaxBatchSizeIn)
 
 		// Second-order AR filter (output in Q8).
-		resamplerPrivateAR2(s[down2_3OrderFIR:], buf[down2_3OrderFIR:], in, resampler2_3COEFSLQ[:], nSamplesIn)
+		resamplerPrivateAR2(
+			s[down2_3OrderFIR:],
+			buf[down2_3OrderFIR:],
+			in,
+			resampler2_3COEFSLQ[:],
+			nSamplesIn,
+		)
 
 		// Interpolate filtered signal.
 		p := 0

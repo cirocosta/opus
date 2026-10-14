@@ -18,6 +18,9 @@ func mul32FracQ(a32, b32 int32, q int) int32 {
 // LPC prediction gain, and test if LPC coefficients are stable (all
 // poles within unit circle). It returns the inverse prediction gain in
 // energy domain, Q30.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func lpcInversePredGainQA(aQA *[silkMaxOrderLPC]int32, order int) int32 {
 	var k int
 	invGainQ30 := lpcInvOneQ30
@@ -48,12 +51,18 @@ func lpcInversePredGainQA(aQA *[silkMaxOrderLPC]int32, order int) int32 {
 		for n := 0; n < (k+1)>>1; n++ {
 			tmp1 := aQA[n]
 			tmp2 := aQA[k-n-1]
-			tmp64 := rshiftRound64(smull(subSat32(tmp1, mul32FracQ(tmp2, rcQ31, 31)), rcMult2), mult2Q)
+			tmp64 := rshiftRound64(
+				smull(subSat32(tmp1, mul32FracQ(tmp2, rcQ31, 31)), rcMult2),
+				mult2Q,
+			)
 			if tmp64 > int64(int32MAX) || tmp64 < int64(int32MIN) {
 				return 0
 			}
 			aQA[n] = int32(tmp64)
-			tmp64 = rshiftRound64(smull(subSat32(tmp2, mul32FracQ(tmp1, rcQ31, 31)), rcMult2), mult2Q)
+			tmp64 = rshiftRound64(
+				smull(subSat32(tmp2, mul32FracQ(tmp1, rcQ31, 31)), rcMult2),
+				mult2Q,
+			)
 			if tmp64 > int64(int32MAX) || tmp64 < int64(int32MIN) {
 				return 0
 			}

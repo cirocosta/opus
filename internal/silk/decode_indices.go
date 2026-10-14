@@ -6,7 +6,15 @@ import "github.com/cirocosta/opus/internal/entcode"
 
 // decodeIndices is silk_decode_indices: decode side-information
 // parameters from payload.
-func (psDec *decoderState) decodeIndices(psRangeDec *entcode.Decoder, frameIndex int, decodeLBRR bool, condCoding int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func (psDec *decoderState) decodeIndices(
+	psRangeDec *entcode.Decoder,
+	frameIndex int,
+	decodeLBRR bool,
+	condCoding int,
+) {
 	var ecIx [maxLPCOrder]int16
 	var predQ8 [maxLPCOrder]uint8
 	var ix int
@@ -27,7 +35,9 @@ func (psDec *decoderState) decodeIndices(psRangeDec *entcode.Decoder, frameIndex
 		psDec.indices.gainsIndices[0] = int8(psRangeDec.DecIcdf(deltaGainICDF[:], 8))
 	} else {
 		// Independent coding, in two stages: MSB bits followed by 3 LSBs.
-		psDec.indices.gainsIndices[0] = int8(psRangeDec.DecIcdf(gainICDF[psDec.indices.signalType][:], 8) << 3)
+		psDec.indices.gainsIndices[0] = int8(
+			psRangeDec.DecIcdf(gainICDF[psDec.indices.signalType][:], 8) << 3,
+		)
 		psDec.indices.gainsIndices[0] += int8(psRangeDec.DecIcdf(uniform8ICDF[:], 8))
 	}
 
@@ -38,13 +48,16 @@ func (psDec *decoderState) decodeIndices(psRangeDec *entcode.Decoder, frameIndex
 
 	// Decode LSF Indices.
 	cb := psDec.psNLSFCB
-	psDec.indices.nlsfIndices[0] = int8(psRangeDec.DecIcdf(cb.cb1ICDF[int(psDec.indices.signalType>>1)*int(cb.nVectors):], 8))
+	psDec.indices.nlsfIndices[0] = int8(
+		psRangeDec.DecIcdf(cb.cb1ICDF[int(psDec.indices.signalType>>1)*int(cb.nVectors):], 8),
+	)
 	nlsfUnpack(ecIx[:], predQ8[:], cb, int(psDec.indices.nlsfIndices[0]))
 	for i := 0; i < int(cb.order); i++ {
 		ix = psRangeDec.DecIcdf(cb.ecICDF[ecIx[i]:], 8)
-		if ix == 0 {
+		switch ix {
+		case 0:
 			ix -= psRangeDec.DecIcdf(nlsfEXTICDF[:], 8)
-		} else if ix == 2*nlsfQuantMaxAmplitude {
+		case 2 * nlsfQuantMaxAmplitude:
 			ix += psRangeDec.DecIcdf(nlsfEXTICDF[:], 8)
 		}
 		psDec.indices.nlsfIndices[i+1] = int8(ix - nlsfQuantMaxAmplitude)
@@ -72,7 +85,11 @@ func (psDec *decoderState) decodeIndices(psRangeDec *entcode.Decoder, frameIndex
 		}
 		if decodeAbsoluteLagIndex {
 			// Absolute decoding.
-			psDec.indices.lagIndex = int16(psRangeDec.DecIcdf(pitchLagICDF[:], 8)) * int16(psDec.fsKHz>>1)
+			psDec.indices.lagIndex = int16(
+				psRangeDec.DecIcdf(pitchLagICDF[:], 8),
+			) * int16(
+				psDec.fsKHz>>1,
+			)
 			psDec.indices.lagIndex += int16(psRangeDec.DecIcdf(psDec.pitchLagLowBitsICDF, 8))
 		}
 		psDec.ecPrevLagIndex = psDec.indices.lagIndex
@@ -85,7 +102,9 @@ func (psDec *decoderState) decodeIndices(psRangeDec *entcode.Decoder, frameIndex
 		psDec.indices.perIndex = int8(psRangeDec.DecIcdf(ltpPerIndexICDF[:], 8))
 
 		for k := 0; k < psDec.nbSubfr; k++ {
-			psDec.indices.ltpIndex[k] = int8(psRangeDec.DecIcdf(ltpGainICDFPtrs[psDec.indices.perIndex], 8))
+			psDec.indices.ltpIndex[k] = int8(
+				psRangeDec.DecIcdf(ltpGainICDFPtrs[psDec.indices.perIndex], 8),
+			)
 		}
 
 		// Decode LTP scaling.

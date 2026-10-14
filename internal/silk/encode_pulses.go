@@ -20,7 +20,15 @@ func combineAndCheck(pulsesComb []int, pulsesIn []int, maxPulses, length int) in
 // encodePulses is silk_encode_pulses: encode quantization indices of
 // excitation. pulses must have room for frameLength rounded up to a
 // multiple of SHELL_CODEC_FRAME_LENGTH.
-func encodePulses(psRangeEnc *entcode.Encoder, signalType, quantOffsetType int, pulses []int8, frameLength int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func encodePulses(
+	psRangeEnc *entcode.Encoder,
+	signalType, quantOffsetType int,
+	pulses []int8,
+	frameLength int,
+) {
 	var (
 		absPulses  [maxNbShellBlocks * shellCodecFrameLength]int
 		sumPulses  [maxNbShellBlocks]int

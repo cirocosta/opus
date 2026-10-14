@@ -6,9 +6,9 @@ package silk
 // factor 2, high quality. It uses 2nd order allpass filters for the 2x
 // upsampling, followed by a notch filter just above Nyquist. s is the
 // resampler state [6]; out holds 2*len samples.
-func resamplerPrivateUp2HQ(s *[resamplerMaxIIROrder]int32, out []int16, in []int16, len int) {
+func resamplerPrivateUp2HQ(s *[resamplerMaxIIROrder]int32, out []int16, in []int16, length int) {
 	// Internal variables and state are in Q10 format.
-	for k := 0; k < len; k++ {
+	for k := 0; k < length; k++ {
 		// Convert to Q10.
 		in32 := lshift(int32(in[k]), 10)
 
@@ -57,6 +57,6 @@ func resamplerPrivateUp2HQ(s *[resamplerMaxIIROrder]int32, out []int16, in []int
 }
 
 // resamplerPrivateUp2HQWrapper is silk_resampler_private_up2_HQ_wrapper.
-func resamplerPrivateUp2HQWrapper(s *resamplerState, out []int16, in []int16, len int) {
-	resamplerPrivateUp2HQ(&s.sIIR, out, in, len)
+func resamplerPrivateUp2HQWrapper(s *resamplerState, out []int16, in []int16, length int) {
+	resamplerPrivateUp2HQ(&s.sIIR, out, in, length)
 }

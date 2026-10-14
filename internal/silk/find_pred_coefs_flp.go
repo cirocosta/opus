@@ -7,8 +7,14 @@ import "math"
 // findPredCoefsFLP is silk_find_pred_coefs_FLP: find LPC and LTP
 // coefficients. resPitch[resOff] and x[xOff] are the C res_pitch and x
 // pointers (start of the frame, with history before them).
-func (psEnc *encoderStateFLP) findPredCoefsFLP(psEncCtrl *encoderControlFLP, resPitch []float32, resOff int,
-	x []float32, xOff int, condCoding int) {
+func (psEnc *encoderStateFLP) findPredCoefsFLP(
+	psEncCtrl *encoderControlFLP,
+	resPitch []float32,
+	resOff int,
+	x []float32,
+	xOff int,
+	condCoding int,
+) {
 	var (
 		xxLTP    [maxNbSubfr * ltpOrder * ltpOrder]float32
 		xXLTP    [maxNbSubfr * ltpOrder]float32
@@ -27,18 +33,44 @@ func (psEnc *encoderStateFLP) findPredCoefsFLP(psEncCtrl *encoderControlFLP, res
 		// VOICED.
 
 		// LTP analysis.
-		findLTPFLP(&xxLTP, &xXLTP, resPitch, resOff, &psEncCtrl.pitchL, psEnc.sCmn.subfrLength, psEnc.sCmn.nbSubfr)
+		findLTPFLP(
+			&xxLTP,
+			&xXLTP,
+			resPitch,
+			resOff,
+			&psEncCtrl.pitchL,
+			psEnc.sCmn.subfrLength,
+			psEnc.sCmn.nbSubfr,
+		)
 
 		// Quantize LTP gain parameters.
-		quantLTPGainsFLP(&psEncCtrl.ltpCoef, psEnc.sCmn.indices.ltpIndex[:], &psEnc.sCmn.indices.perIndex,
-			&psEnc.sCmn.sumLogGainQ7, &psEncCtrl.ltpredCodGain, &xxLTP, &xXLTP, psEnc.sCmn.subfrLength, psEnc.sCmn.nbSubfr)
+		quantLTPGainsFLP(
+			&psEncCtrl.ltpCoef,
+			psEnc.sCmn.indices.ltpIndex[:],
+			&psEnc.sCmn.indices.perIndex,
+			&psEnc.sCmn.sumLogGainQ7,
+			&psEncCtrl.ltpredCodGain,
+			&xxLTP,
+			&xXLTP,
+			psEnc.sCmn.subfrLength,
+			psEnc.sCmn.nbSubfr,
+		)
 
 		// Control LTP scaling.
 		psEnc.ltpScaleCtrlFLP(psEncCtrl, condCoding)
 
 		// Create LTP residual.
-		ltpAnalysisFilterFLP(lpcInPre[:], x, xOff-psEnc.sCmn.predictLPCOrder, &psEncCtrl.ltpCoef,
-			&psEncCtrl.pitchL, &invGains, psEnc.sCmn.subfrLength, psEnc.sCmn.nbSubfr, psEnc.sCmn.predictLPCOrder)
+		ltpAnalysisFilterFLP(
+			lpcInPre[:],
+			x,
+			xOff-psEnc.sCmn.predictLPCOrder,
+			&psEncCtrl.ltpCoef,
+			&psEncCtrl.pitchL,
+			&invGains,
+			psEnc.sCmn.subfrLength,
+			psEnc.sCmn.nbSubfr,
+			psEnc.sCmn.predictLPCOrder,
+		)
 	} else {
 		// UNVOICED.
 		// Create signal with prepended subframes, scaled by inverse gains.
@@ -62,7 +94,9 @@ func (psEnc *encoderStateFLP) findPredCoefsFLP(psEncCtrl *encoderControlFLP, res
 	if psEnc.sCmn.firstFrameAfterReset != 0 {
 		minInvGain = 1.0 / maxPredictionPowerGainAfterReset
 	} else {
-		minInvGain = float32(math.Pow(2, float64(psEncCtrl.ltpredCodGain/3))) / maxPredictionPowerGain
+		minInvGain = float32(
+			math.Pow(2, float64(psEncCtrl.ltpredCodGain/3)),
+		) / maxPredictionPowerGain
 		minInvGain /= 0.25 + float32(0.75*psEncCtrl.codingQuality)
 	}
 

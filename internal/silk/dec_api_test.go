@@ -19,9 +19,36 @@ func TestDecodeErrors(t *testing.T) {
 		ctl  DecControl
 		want int
 	}{
-		{DecControl{NChannelsAPI: 1, NChannelsInternal: 1, APISampleRate: 48000, InternalSampleRate: 16000, PayloadSizeMs: 30}, DecInvalidFrameSize},
-		{DecControl{NChannelsAPI: 1, NChannelsInternal: 1, APISampleRate: 48000, InternalSampleRate: 24000, PayloadSizeMs: 20}, DecInvalidSamplingFrequency},
-		{DecControl{NChannelsAPI: 1, NChannelsInternal: 1, APISampleRate: 96000, InternalSampleRate: 16000, PayloadSizeMs: 20}, DecInvalidSamplingFrequency},
+		{
+			DecControl{
+				NChannelsAPI:       1,
+				NChannelsInternal:  1,
+				APISampleRate:      48000,
+				InternalSampleRate: 16000,
+				PayloadSizeMs:      30,
+			},
+			DecInvalidFrameSize,
+		},
+		{
+			DecControl{
+				NChannelsAPI:       1,
+				NChannelsInternal:  1,
+				APISampleRate:      48000,
+				InternalSampleRate: 24000,
+				PayloadSizeMs:      20,
+			},
+			DecInvalidSamplingFrequency,
+		},
+		{
+			DecControl{
+				NChannelsAPI:       1,
+				NChannelsInternal:  1,
+				APISampleRate:      96000,
+				InternalSampleRate: 16000,
+				PayloadSizeMs:      20,
+			},
+			DecInvalidSamplingFrequency,
+		},
 	}
 	for i, c := range cases {
 		if _, ret := dec.Decode(&c.ctl, FlagDecodeNormal, true, &ec, out); ret != c.want {
@@ -29,7 +56,12 @@ func TestDecodeErrors(t *testing.T) {
 		}
 	}
 	// Packet loss with payloadSize_ms == 0 conceals 10 ms.
-	ctl := DecControl{NChannelsAPI: 1, NChannelsInternal: 1, APISampleRate: 16000, InternalSampleRate: 16000}
+	ctl := DecControl{
+		NChannelsAPI:       1,
+		NChannelsInternal:  1,
+		APISampleRate:      16000,
+		InternalSampleRate: 16000,
+	}
 	dec.Init()
 	if n, ret := dec.Decode(&ctl, FlagPacketLost, true, nil, out); ret != NoError || n != 160 {
 		t.Errorf("PLC with payloadSize_ms 0: got n=%d ret=%d", n, ret)
@@ -61,11 +93,13 @@ func TestDecodeAllocs(t *testing.T) {
 		} else if cfg < 8 {
 			rate = 12000
 		}
-		ctl := DecControl{NChannelsAPI: 2, NChannelsInternal: int32(f.toc>>2&1) + 1, APISampleRate: 48000,
-			InternalSampleRate: rate, PayloadSizeMs: frameDuration(cfg)}
+		ctl := DecControl{
+			NChannelsAPI: 2, NChannelsInternal: int32(f.toc>>2&1) + 1, APISampleRate: 48000,
+			InternalSampleRate: rate, PayloadSizeMs: frameDuration(cfg),
+		}
 		ec.Init(f.data)
-		dec.Decode(&ctl, FlagDecodeNormal, true, &ec, out)
-		dec.Decode(&ctl, FlagPacketLost, true, nil, out)
+		_, _ = dec.Decode(&ctl, FlagDecodeNormal, true, &ec, out)
+		_, _ = dec.Decode(&ctl, FlagPacketLost, true, nil, out)
 	})
 	if allocs != 0 {
 		t.Errorf("Decode allocates %v times per call", allocs)

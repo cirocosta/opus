@@ -7,8 +7,12 @@ var nlsfQuantLevelAdjQ10 = int16(fixConst(nlsfQuantLevelAdj, 10))
 
 // nlsfDelDecQuant is silk_NLSF_del_dec_quant: delayed-decision quantizer
 // for NLSF residuals. It returns the RD value in Q25.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func nlsfDelDecQuant(indices []int8, xQ10 []int16, wQ5 []int16, predCoefQ8 []uint8, ecIx []int16,
-	ecRatesQ5 []uint8, quantStepSizeQ16 int, invQuantStepSizeQ6 int16, muQ20 int32, order int16) int32 {
+	ecRatesQ5 []uint8, quantStepSizeQ16 int, invQuantStepSizeQ6 int16, muQ20 int32, order int16,
+) int32 {
 	var (
 		indSort    [nlsfQuantDelDecStates]int
 		ind        [nlsfQuantDelDecStates][maxLPCOrder]int8
@@ -35,8 +39,12 @@ func nlsfDelDecQuant(indices []int8, xQ10 []int16, wQ5 []int16, predCoefQ8 []uin
 			out0Q10 = out0Q10 + nlsfQuantLevelAdjQ10
 			out1Q10 = out1Q10 + nlsfQuantLevelAdjQ10
 		}
-		out0Q10Table[i+nlsfQuantMaxAmplitudeExt] = int(smulbb(int32(out0Q10), int32(quantStepSizeQ16)) >> 16)
-		out1Q10Table[i+nlsfQuantMaxAmplitudeExt] = int(smulbb(int32(out1Q10), int32(quantStepSizeQ16)) >> 16)
+		out0Q10Table[i+nlsfQuantMaxAmplitudeExt] = int(
+			smulbb(int32(out0Q10), int32(quantStepSizeQ16)) >> 16,
+		)
+		out1Q10Table[i+nlsfQuantMaxAmplitudeExt] = int(
+			smulbb(int32(out1Q10), int32(quantStepSizeQ16)) >> 16,
+		)
 	}
 
 	nStates := 1
@@ -85,9 +93,17 @@ func nlsfDelDecQuant(indices []int8, xQ10 []int16, wQ5 []int16, predCoefQ8 []uin
 			}
 			rdTmpQ25 := rdQ25[j]
 			diffQ10 := int32(inQ10 - int(out0Q10))
-			rdQ25[j] = smlabb(mla(rdTmpQ25, smulbb(diffQ10, diffQ10), int32(wQ5[i])), muQ20, int32(rate0Q5))
+			rdQ25[j] = smlabb(
+				mla(rdTmpQ25, smulbb(diffQ10, diffQ10), int32(wQ5[i])),
+				muQ20,
+				int32(rate0Q5),
+			)
 			diffQ10 = int32(inQ10 - int(out1Q10))
-			rdQ25[j+nStates] = smlabb(mla(rdTmpQ25, smulbb(diffQ10, diffQ10), int32(wQ5[i])), muQ20, int32(rate1Q5))
+			rdQ25[j+nStates] = smlabb(
+				mla(rdTmpQ25, smulbb(diffQ10, diffQ10), int32(wQ5[i])),
+				muQ20,
+				int32(rate1Q5),
+			)
 		}
 
 		if nStates <= nlsfQuantDelDecStates/2 {

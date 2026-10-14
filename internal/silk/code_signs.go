@@ -13,8 +13,12 @@ func silkDecMap(a int) int16 { return int16((a << 1) - 1) }
 // encodeSigns is silk_encode_signs: encodes signs of excitation. This
 // encoder function is ported with the file but is not exercised by the
 // decoder tests.
-func encodeSigns(psRangeEnc *entcode.Encoder, pulses []int8, length, signalType, quantOffsetType int,
-	sumPulses *[maxNbShellBlocks]int) {
+func encodeSigns(
+	psRangeEnc *entcode.Encoder,
+	pulses []int8,
+	length, signalType, quantOffsetType int,
+	sumPulses *[maxNbShellBlocks]int,
+) {
 	var icdf [2]uint8
 	icdf[1] = 0
 	qPtr := pulses
@@ -36,8 +40,12 @@ func encodeSigns(psRangeEnc *entcode.Encoder, pulses []int8, length, signalType,
 }
 
 // decodeSigns is silk_decode_signs: decodes signs of excitation.
-func decodeSigns(psRangeDec *entcode.Decoder, pulses []int16, length, signalType, quantOffsetType int,
-	sumPulses *[maxNbShellBlocks]int) {
+func decodeSigns(
+	psRangeDec *entcode.Decoder,
+	pulses []int16,
+	length, signalType, quantOffsetType int,
+	sumPulses *[maxNbShellBlocks]int,
+) {
 	var icdf [2]uint8
 	icdf[1] = 0
 	qPtr := pulses

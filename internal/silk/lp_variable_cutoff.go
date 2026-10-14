@@ -8,7 +8,15 @@ package silk
 
 // lpInterpolateFilterTaps is silk_LP_interpolate_filter_taps: helper
 // function, interpolates the filter taps.
-func lpInterpolateFilterTaps(bQ28 *[transitionNB]int32, aQ28 *[transitionNA]int32, ind int, facQ16 int32) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func lpInterpolateFilterTaps(
+	bQ28 *[transitionNB]int32,
+	aQ28 *[transitionNA]int32,
+	ind int,
+	facQ16 int32,
+) {
 	if ind < transitionIntNum-1 {
 		if facQ16 > 0 {
 			if facQ16 < 32768 { // fac_Q16 is in range of a 16-bit int
@@ -62,7 +70,11 @@ func lpVariableCutoff(psLP *lpState, frame []int16, frameLength int) {
 		lpInterpolateFilterTaps(&bQ28, &aQ28, ind, facQ16)
 
 		// Update transition frame number for next frame.
-		psLP.transitionFrameNo = limit32(psLP.transitionFrameNo+int32(psLP.mode), 0, transitionFrames)
+		psLP.transitionFrameNo = limit32(
+			psLP.transitionFrameNo+int32(psLP.mode),
+			0,
+			transitionFrames,
+		)
 
 		// ARMA low-pass filtering.
 		biquadAltStride1(frame, &bQ28, &aQ28, &psLP.inLPState, frame, frameLength)

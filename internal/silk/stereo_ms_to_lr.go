@@ -5,7 +5,12 @@ package silk
 // stereoMSToLR is silk_stereo_MS_to_LR: convert adaptive Mid/Side
 // representation to Left/Right stereo signal. x1 and x2 hold
 // frameLength+2 samples; the first two are the buffered samples.
-func stereoMSToLR(state *stereoDecState, x1, x2 []int16, predQ13 *[2]int32, fsKHz, frameLength int) {
+func stereoMSToLR(
+	state *stereoDecState,
+	x1, x2 []int16,
+	predQ13 *[2]int32,
+	fsKHz, frameLength int,
+) {
 	// Buffering.
 	copy(x1[:2], state.sMid[:])
 	copy(x2[:2], state.sSide[:])

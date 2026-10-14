@@ -51,6 +51,9 @@ func (psDec *decoderState) plc(psDecCtrl *decoderControl, frame []int16, lost bo
 }
 
 // plcUpdate is silk_PLC_update: update state of PLC.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) plcUpdate(psDecCtrl *decoderControl) {
 	psPLC := &psDec.sPLC
 
@@ -111,7 +114,11 @@ func (psDec *decoderState) plcUpdate(psDecCtrl *decoderControl) {
 }
 
 // plcEnergy is silk_PLC_energy.
-func (psDec *decoderState) plcEnergy(excQ14 []int32, prevGainQ10 *[2]int32, subfrLength, nbSubfr int) (energy1 int32, shift1 int, energy2 int32, shift2 int) {
+func (psDec *decoderState) plcEnergy(
+	excQ14 []int32,
+	prevGainQ10 *[2]int32,
+	subfrLength, nbSubfr int,
+) (energy1 int32, shift1 int, energy2 int32, shift2 int) {
 	excBuf := psDec.scratch.excBuf[:2*subfrLength]
 
 	// Find random noise component.
@@ -119,7 +126,9 @@ func (psDec *decoderState) plcEnergy(excQ14 []int32, prevGainQ10 *[2]int32, subf
 	excBufPtr := excBuf
 	for k := 0; k < 2; k++ {
 		for i := 0; i < subfrLength; i++ {
-			excBufPtr[i] = int16(sat16(smulww(excQ14[i+(k+nbSubfr-2)*subfrLength], prevGainQ10[k]) >> 8))
+			excBufPtr[i] = int16(
+				sat16(smulww(excQ14[i+(k+nbSubfr-2)*subfrLength], prevGainQ10[k]) >> 8),
+			)
 		}
 		excBufPtr = excBufPtr[subfrLength:]
 	}
@@ -132,6 +141,9 @@ func (psDec *decoderState) plcEnergy(excQ14 []int32, prevGainQ10 *[2]int32, subf
 }
 
 // plcConceal is silk_PLC_conceal.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) plcConceal(psDecCtrl *decoderControl, frame []int16) {
 	var aQ12 [maxLPCOrder]int16
 	var prevGainQ10 [2]int32
@@ -148,7 +160,12 @@ func (psDec *decoderState) plcConceal(psDecCtrl *decoderControl, frame []int16) 
 		clear(psPLC.prevLPCQ12[:])
 	}
 
-	energy1, shift1, energy2, shift2 := psDec.plcEnergy(psDec.excQ14[:], &prevGainQ10, psDec.subfrLength, psDec.nbSubfr)
+	energy1, shift1, energy2, shift2 := psDec.plcEnergy(
+		psDec.excQ14[:],
+		&prevGainQ10,
+		psDec.subfrLength,
+		psDec.nbSubfr,
+	)
 
 	if energy1>>uint(shift2) < energy2>>uint(shift1) {
 		// First sub-frame has lowest energy.
@@ -207,7 +224,13 @@ func (psDec *decoderState) plcConceal(psDecCtrl *decoderControl, frame []int16) 
 
 	// Rewhiten LTP state.
 	idx := psDec.ltpMemLength - lag - psDec.lpcOrder - ltpOrder/2
-	lpcAnalysisFilter(sLTP[idx:], psDec.outBuf[idx:], aQ12[:], psDec.ltpMemLength-idx, psDec.lpcOrder)
+	lpcAnalysisFilter(
+		sLTP[idx:],
+		psDec.outBuf[idx:],
+		aQ12[:],
+		psDec.ltpMemLength-idx,
+		psDec.lpcOrder,
+	)
 	// Scale LTP state.
 	invGainQ30 := inverse32VarQ(psPLC.prevGainQ16[1], 46)
 	invGainQ30 = min32(invGainQ30, int32MAX>>1)
@@ -280,7 +303,9 @@ func (psDec *decoderState) plcConceal(psDecCtrl *decoderControl, frame []int16) 
 		sLPCQ14[maxLPCOrder+i] = addSat32(sLPCQ14[maxLPCOrder+i], lshiftSat32(lpcPredQ10, 4))
 
 		// Scale with Gain.
-		frame[i] = int16(sat16(sat16(rshiftRound(smulww(sLPCQ14[maxLPCOrder+i], prevGainQ10[1]), 8))))
+		frame[i] = int16(
+			sat16(sat16(rshiftRound(smulww(sLPCQ14[maxLPCOrder+i], prevGainQ10[1]), 8))),
+		)
 	}
 
 	// Save LPC state.
@@ -296,6 +321,9 @@ func (psDec *decoderState) plcConceal(psDecCtrl *decoderControl, frame []int16) 
 
 // plcGlueFrames is silk_PLC_glue_frames: glues concealed frames with new
 // good received frames.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) plcGlueFrames(frame []int16, length int) {
 	psPLC := &psDec.sPLC
 

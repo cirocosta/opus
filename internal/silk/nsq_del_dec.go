@@ -49,6 +49,9 @@ type nsqSampleStruct struct {
 
 // nsqDelDec is silk_NSQ_del_dec (silk_NSQ_del_dec_c): noise shaping
 // quantization with delayed decision.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psEncC *encoderState) nsqDelDec(
 	nsq *nsqState,
 	psIndices *sideInfoIndices,
@@ -278,6 +281,9 @@ func (psEncC *encoderState) nsqDelDec(
 // noiseShapeQuantizerDelDec is silk_noise_shape_quantizer_del_dec: noise
 // shape quantizer for one subframe. pulses[pulsesOff+i] and
 // nsq.xq[xqOff+i] are pulses[ i ] and xq[ i ] in C.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (nsq *nsqState) noiseShapeQuantizerDelDec(
 	psDelDec []nsqDelDecStruct,
 	signalType int,
@@ -359,7 +365,12 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(
 			lpcPredQ14 = lshift(lpcPredQ14, 4) // Q10 -> Q14
 
 			// Preserve the ordered allpass chain and each fixed-point wrap.
-			nARQ14 := kernels.WarpedFeedback(psDD.sAR2Q14[:], arShpQ13[:shapingLPCOrder], psDD.diffQ14, int32(warpingQ16))
+			nARQ14 := kernels.WarpedFeedback(
+				psDD.sAR2Q14[:],
+				arShpQ13[:shapingLPCOrder],
+				psDD.diffQ14,
+				int32(warpingQ16),
+			)
 
 			nARQ14 = lshift(nARQ14, 1)                            // Q11 -> Q12
 			nARQ14 = smlawb(nARQ14, psDD.lfARQ14, int32(tiltQ14)) // Q12
@@ -573,6 +584,9 @@ func (nsq *nsqState) noiseShapeQuantizerDelDec(
 }
 
 // nsqDelDecScaleStates is silk_nsq_del_dec_scale_states.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psEncC *encoderState) nsqDelDecScaleStates(
 	nsq *nsqState,
 	psDelDec []nsqDelDecStruct,

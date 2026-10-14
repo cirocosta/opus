@@ -29,7 +29,7 @@ func readGolden(t *testing.T) map[string]string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	m := map[string]string{}
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
@@ -87,7 +87,11 @@ func TestVectors(t *testing.T) {
 					got := hex.EncodeToString(h.Sum(nil))[:32] + " " + fmt.Sprint(n)
 					if dump != "" {
 						name := fmt.Sprintf("tv%s_%d_%d_%d.txt", vec, rate, ch, loss)
-						if err := os.WriteFile(filepath.Join(dump, name), []byte(sb.String()), 0o644); err != nil {
+						if err := os.WriteFile(
+							filepath.Join(dump, name),
+							[]byte(sb.String()),
+							0o644,
+						); err != nil {
 							t.Fatal(err)
 						}
 					}

@@ -6,7 +6,12 @@ package silk
 // prediction gain for one signal based on another and quantize it. It
 // returns the predictor in Q13 and the ratio of residual and mid
 // energies in Q14.
-func stereoFindPredictor(x, y []int16, midResAmpQ0 []int32, length int, smoothCoefQ16 int) (predQ13, ratioQ14 int32) {
+func stereoFindPredictor(
+	x, y []int16,
+	midResAmpQ0 []int32,
+	length int,
+	smoothCoefQ16 int,
+) (predQ13, ratioQ14 int32) {
 	// Find predictor.
 	nrgx, scale1 := sumSqrShift(x, length)
 	nrgy, scale2 := sumSqrShift(y, length)

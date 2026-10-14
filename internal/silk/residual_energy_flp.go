@@ -10,6 +10,9 @@ const (
 // residualEnergyCovarFLP is silk_residual_energy_covar_FLP: residual
 // energy: nrg = wxx - 2 * wXx * c + c' * wXX * c. The libopus encoder
 // does not call it.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func residualEnergyCovarFLP(c []float32, wXX []float32, wXx []float32, wxx float32, d int) float32 {
 	var k int
 	nrg := float32(0.0)
@@ -52,8 +55,13 @@ func residualEnergyCovarFLP(c []float32, wXX []float32, wXx []float32, wxx float
 // residualEnergyFLP is silk_residual_energy_FLP: calculates residual
 // energies of input subframes where all subframes have LPC_order of
 // preceding samples.
-func residualEnergyFLP(nrgs *[maxNbSubfr]float32, x []float32, a *[2][maxLPCOrder]float32, gains *[maxNbSubfr]float32,
-	subfrLength, nbSubfr, lpcOrder int) {
+func residualEnergyFLP(
+	nrgs *[maxNbSubfr]float32,
+	x []float32,
+	a *[2][maxLPCOrder]float32,
+	gains *[maxNbSubfr]float32,
+	subfrLength, nbSubfr, lpcOrder int,
+) {
 	var lpcRes [(maxFrameLength + maxNbSubfr*maxLPCOrder) / 2]float32
 
 	lpcResPtr := lpcOrder
@@ -62,12 +70,30 @@ func residualEnergyFLP(nrgs *[maxNbSubfr]float32, x []float32, a *[2][maxLPCOrde
 	// Filter input to create the LPC residual for each frame half, and
 	// measure subframe energies.
 	lpcAnalysisFilterFLP(lpcRes[:], a[0][:], x[0*shift:], 2*shift, lpcOrder)
-	nrgs[0] = float32(float64(float32(gains[0]*gains[0])) * energyFLP(lpcRes[lpcResPtr+0*shift:], subfrLength))
-	nrgs[1] = float32(float64(float32(gains[1]*gains[1])) * energyFLP(lpcRes[lpcResPtr+1*shift:], subfrLength))
+	nrgs[0] = float32(
+		float64(float32(gains[0]*gains[0])) * energyFLP(lpcRes[lpcResPtr+0*shift:], subfrLength),
+	)
+	nrgs[1] = float32(
+		float64(float32(gains[1]*gains[1])) * energyFLP(lpcRes[lpcResPtr+1*shift:], subfrLength),
+	)
 
 	if nbSubfr == maxNbSubfr {
 		lpcAnalysisFilterFLP(lpcRes[:], a[1][:], x[2*shift:], 2*shift, lpcOrder)
-		nrgs[2] = float32(float64(float32(gains[2]*gains[2])) * energyFLP(lpcRes[lpcResPtr+0*shift:], subfrLength))
-		nrgs[3] = float32(float64(float32(gains[3]*gains[3])) * energyFLP(lpcRes[lpcResPtr+1*shift:], subfrLength))
+		nrgs[2] = float32(
+			float64(
+				float32(gains[2]*gains[2]),
+			) * energyFLP(
+				lpcRes[lpcResPtr+0*shift:],
+				subfrLength,
+			),
+		)
+		nrgs[3] = float32(
+			float64(
+				float32(gains[3]*gains[3]),
+			) * energyFLP(
+				lpcRes[lpcResPtr+1*shift:],
+				subfrLength,
+			),
+		)
 	}
 }

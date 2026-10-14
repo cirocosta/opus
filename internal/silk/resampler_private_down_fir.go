@@ -5,8 +5,13 @@ package silk
 // resamplerPrivateDownFIRInterpol is
 // silk_resampler_private_down_FIR_INTERPOL. It returns the number of
 // output samples written.
-func resamplerPrivateDownFIRInterpol(out []int16, buf []int32, firCoefs []int16, firOrder, firFracs int,
-	maxIndexQ16, indexIncrementQ16 int32) int {
+func resamplerPrivateDownFIRInterpol(
+	out []int16,
+	buf []int32,
+	firCoefs []int16,
+	firOrder, firFracs int,
+	maxIndexQ16, indexIncrementQ16 int32,
+) int {
 	n := 0
 	switch firOrder {
 	case resamplerDownOrderFIR0:

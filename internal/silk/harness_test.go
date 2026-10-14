@@ -217,7 +217,8 @@ func runSILK(frames []opusFrame, apiRate, apiCh, loss int, emit func(line string
 		stoc := toc
 		if lost {
 			lostFlag = FlagPacketLost
-			if loss == 2 && fi+1 < len(frames) && int(frames[fi+1].toc>>3) < 16 && len(frames[fi+1].data) > 1 {
+			if loss == 2 && fi+1 < len(frames) && int(frames[fi+1].toc>>3) < 16 &&
+				len(frames[fi+1].data) > 1 {
 				lostFlag = FlagDecodeLBRR
 				src = frames[fi+1].data
 				stoc = int(frames[fi+1].toc)
@@ -259,7 +260,16 @@ func runSILK(frames []opusFrame, apiRate, apiCh, loss int, emit func(line string
 				rng = rd.Rng
 			}
 			samples := out[:int(n)*apiCh]
-			line := fmt.Sprintf("%d %d %d %d %d %d %016x\n", fi, lostFlag, ret, n, rng, ctl.PrevPitchLag, fnv64(samples))
+			line := fmt.Sprintf(
+				"%d %d %d %d %d %d %016x\n",
+				fi,
+				lostFlag,
+				ret,
+				n,
+				rng,
+				ctl.PrevPitchLag,
+				fnv64(samples),
+			)
 			emit(line, samples)
 			if ret != 0 || n <= 0 {
 				break

@@ -37,13 +37,6 @@ const (
 
 	maxFramesPerPacket = 3
 
-	minTargetRateBps = 5000
-	maxTargetRateBps = 80000
-
-	lbrrNBMinRateBps = 12000
-	lbrrMBMinRateBps = 14000
-	lbrrWBMinRateBps = 16000
-
 	nbSpeechFramesBeforeDTX = 10
 	maxConsecutiveDTX       = 20
 	dtxActivityThreshold    = float32(0.1)
@@ -67,9 +60,6 @@ const (
 	stereoQuantSubSteps   = 5
 	stereoInterpLenMs     = 8
 	stereoRatioSmoothCoef = 0.01
-
-	pitchEstMinLagMs = 2
-	pitchEstMaxLagMs = 18
 
 	maxNbSubfr = 4
 

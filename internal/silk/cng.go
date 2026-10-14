@@ -32,6 +32,9 @@ func (psDec *decoderState) cngReset() {
 
 // cng is silk_CNG: updates CNG estimate, and applies the CNG when packet
 // was lost.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) cng(psDecCtrl *decoderControl, frame []int16, length int) {
 	var aQ12 [maxLPCOrder]int16
 	psCNG := &psDec.sCNG
@@ -47,7 +50,9 @@ func (psDec *decoderState) cng(psDecCtrl *decoderControl, frame []int16, length 
 
 		// Smoothing of LSF's.
 		for i := 0; i < psDec.lpcOrder; i++ {
-			psCNG.cngSmthNLSFQ15[i] += int16(smulwb(int32(psDec.prevNLSFQ15[i])-int32(psCNG.cngSmthNLSFQ15[i]), cngNLSFSmthQ16))
+			psCNG.cngSmthNLSFQ15[i] += int16(
+				smulwb(int32(psDec.prevNLSFQ15[i])-int32(psCNG.cngSmthNLSFQ15[i]), cngNLSFSmthQ16),
+			)
 		}
 		// Find the subframe with the highest gain.
 		maxGainQ16 := int32(0)
@@ -59,12 +64,21 @@ func (psDec *decoderState) cng(psDecCtrl *decoderControl, frame []int16, length 
 			}
 		}
 		// Update CNG excitation buffer with excitation from this subframe.
-		copy(psCNG.cngExcBufQ14[psDec.subfrLength:psDec.nbSubfr*psDec.subfrLength], psCNG.cngExcBufQ14[:(psDec.nbSubfr-1)*psDec.subfrLength])
-		copy(psCNG.cngExcBufQ14[:psDec.subfrLength], psDec.excQ14[subfr*psDec.subfrLength:(subfr+1)*psDec.subfrLength])
+		copy(
+			psCNG.cngExcBufQ14[psDec.subfrLength:psDec.nbSubfr*psDec.subfrLength],
+			psCNG.cngExcBufQ14[:(psDec.nbSubfr-1)*psDec.subfrLength],
+		)
+		copy(
+			psCNG.cngExcBufQ14[:psDec.subfrLength],
+			psDec.excQ14[subfr*psDec.subfrLength:(subfr+1)*psDec.subfrLength],
+		)
 
 		// Smooth gains.
 		for i := 0; i < psDec.nbSubfr; i++ {
-			psCNG.cngSmthGainQ16 += smulwb(psDecCtrl.gainsQ16[i]-psCNG.cngSmthGainQ16, cngGainSmthQ16)
+			psCNG.cngSmthGainQ16 += smulwb(
+				psDecCtrl.gainsQ16[i]-psCNG.cngSmthGainQ16,
+				cngGainSmthQ16,
+			)
 			// If the smoothed gain is 3 dB greater than this subframe's
 			// gain, use this subframe's gain to adapt faster.
 			if smulww(psCNG.cngSmthGainQ16, cngGainSmthThresholdQ16) > psDecCtrl.gainsQ16[i] {
@@ -121,10 +135,16 @@ func (psDec *decoderState) cng(psDecCtrl *decoderControl, frame []int16, length 
 			}
 
 			// Update states.
-			cngSigQ14[maxLPCOrder+i] = addSat32(cngSigQ14[maxLPCOrder+i], lshiftSat32(lpcPredQ10, 4))
+			cngSigQ14[maxLPCOrder+i] = addSat32(
+				cngSigQ14[maxLPCOrder+i],
+				lshiftSat32(lpcPredQ10, 4),
+			)
 
 			// Scale with Gain and add to input signal.
-			frame[i] = addSat16(frame[i], int16(sat16(rshiftRound(smulww(cngSigQ14[maxLPCOrder+i], gainQ10), 8))))
+			frame[i] = addSat16(
+				frame[i],
+				int16(sat16(rshiftRound(smulww(cngSigQ14[maxLPCOrder+i], gainQ10), 8))),
+			)
 
 		}
 		copy(psCNG.cngSynthState[:], cngSigQ14[length:length+maxLPCOrder])

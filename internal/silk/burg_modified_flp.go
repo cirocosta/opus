@@ -8,7 +8,15 @@ import "math"
 // coefficients from the input signal. x holds nb_subfr subframes of
 // subfr_length samples (including D preceding samples). It returns the
 // residual energy.
-func burgModifiedFLP(a []float32, x []float32, minInvGain float32, subfrLength, nbSubfr, d int) float32 {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func burgModifiedFLP(
+	a []float32,
+	x []float32,
+	minInvGain float32,
+	subfrLength, nbSubfr, d int,
+) float32 {
 	var (
 		cFirstRow [silkMaxOrderLPC]float64
 		cLastRow  [silkMaxOrderLPC]float64

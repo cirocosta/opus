@@ -5,7 +5,14 @@ package silk
 // biquadAltStride1 is silk_biquad_alt_stride1: second order ARMA filter,
 // alternative implementation (direct form II transposed, 2 element
 // state vector). out may alias in.
-func biquadAltStride1(in []int16, bQ28 *[transitionNB]int32, aQ28 *[transitionNA]int32, s *[2]int32, out []int16, length int) {
+func biquadAltStride1(
+	in []int16,
+	bQ28 *[transitionNB]int32,
+	aQ28 *[transitionNA]int32,
+	s *[2]int32,
+	out []int16,
+	length int,
+) {
 	// Negate A_Q28 values and split in two parts.
 	a0LQ28 := (-aQ28[0]) & 0x00003FFF // lower part
 	a0UQ28 := (-aQ28[0]) >> 14        // upper part

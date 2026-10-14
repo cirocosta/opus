@@ -4,7 +4,11 @@ package silk
 
 // autocorrelationFLP is silk_autocorrelation_FLP: compute
 // autocorrelation.
-func autocorrelationFLP(results []float32, inputData []float32, inputDataSize, correlationCount int) {
+func autocorrelationFLP(
+	results []float32,
+	inputData []float32,
+	inputDataSize, correlationCount int,
+) {
 	if correlationCount > inputDataSize {
 		correlationCount = inputDataSize
 	}

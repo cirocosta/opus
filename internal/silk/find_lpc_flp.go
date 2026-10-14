@@ -19,13 +19,28 @@ func (psEncC *encoderState) findLPCFLP(nlsfQ15 []int16, x []float32, minInvGain 
 	psEncC.indices.nlsfInterpCoefQ2 = 4
 
 	// Burg AR analysis for the full frame.
-	resNrg := burgModifiedFLP(a[:], x, minInvGain, subfrLength, psEncC.nbSubfr, psEncC.predictLPCOrder)
+	resNrg := burgModifiedFLP(
+		a[:],
+		x,
+		minInvGain,
+		subfrLength,
+		psEncC.nbSubfr,
+		psEncC.predictLPCOrder,
+	)
 
-	if psEncC.useInterpolatedNLSFs != 0 && psEncC.firstFrameAfterReset == 0 && psEncC.nbSubfr == maxNbSubfr {
+	if psEncC.useInterpolatedNLSFs != 0 && psEncC.firstFrameAfterReset == 0 &&
+		psEncC.nbSubfr == maxNbSubfr {
 		// Optimal solution for last 10 ms; subtract residual energy here,
 		// as that's easier than adding it to the residual energy of the
 		// first 10 ms in each iteration of the search below.
-		resNrg -= burgModifiedFLP(aTmp[:], x[(maxNbSubfr/2)*subfrLength:], minInvGain, subfrLength, maxNbSubfr/2, psEncC.predictLPCOrder)
+		resNrg -= burgModifiedFLP(
+			aTmp[:],
+			x[(maxNbSubfr/2)*subfrLength:],
+			minInvGain,
+			subfrLength,
+			maxNbSubfr/2,
+			psEncC.predictLPCOrder,
+		)
 
 		// Convert to NLSFs.
 		a2nlsfFLP(nlsfQ15, aTmp[:], psEncC.predictLPCOrder)
@@ -44,7 +59,10 @@ func (psEncC *encoderState) findLPCFLP(nlsfQ15 []int16, x []float32, minInvGain 
 			lpcAnalysisFilterFLP(lpcRes[:], aTmp[:], x, 2*subfrLength, psEncC.predictLPCOrder)
 			resNrgInterp := float32(
 				energyFLP(lpcRes[psEncC.predictLPCOrder:], subfrLength-psEncC.predictLPCOrder) +
-					energyFLP(lpcRes[psEncC.predictLPCOrder+subfrLength:], subfrLength-psEncC.predictLPCOrder))
+					energyFLP(
+						lpcRes[psEncC.predictLPCOrder+subfrLength:],
+						subfrLength-psEncC.predictLPCOrder,
+					))
 
 			// Determine whether current interpolated NLSFs are best so far.
 			if resNrgInterp < resNrg {

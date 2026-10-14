@@ -45,12 +45,6 @@ func mla(a32, b32, c32 int32) int32 { return a32 + b32*c32 }
 // smultt is silk_SMULTT.
 func smultt(a32, b32 int32) int32 { return (a32 >> 16) * (b32 >> 16) }
 
-// smlatt is silk_SMLATT.
-func smlatt(a32, b32, c32 int32) int32 { return a32 + (b32>>16)*(c32>>16) }
-
-// smlalbb is silk_SMLALBB.
-func smlalbb(a64 int64, b16, c16 int16) int64 { return a64 + int64(int32(b16)*int32(c16)) }
-
 // smull is silk_SMULL.
 func smull(a32, b32 int32) int64 { return int64(a32) * int64(b32) }
 
@@ -74,17 +68,6 @@ func div32_16(a32, b16 int32) int32 { return a32 / b16 }
 // div32 is silk_DIV32.
 func div32(a32, b32 int32) int32 { return a32 / b32 }
 
-// sat8 is silk_SAT8.
-func sat8(a int32) int32 {
-	if a > int8MAX {
-		return int8MAX
-	}
-	if a < int8MIN {
-		return int8MIN
-	}
-	return a
-}
-
 // sat16 is silk_SAT16.
 func sat16(a int32) int32 {
 	if a > int16MAX {
@@ -96,60 +79,8 @@ func sat16(a int32) int32 {
 	return a
 }
 
-// sat32 is silk_SAT32 for a 64-bit argument.
-func sat32(a int64) int32 {
-	if a > int64(int32MAX) {
-		return int32MAX
-	}
-	if a < int64(int32MIN) {
-		return int32MIN
-	}
-	return int32(a)
-}
-
 // addSat16 is silk_ADD_SAT16.
 func addSat16(a, b int16) int16 { return int16(sat16(int32(a) + int32(b))) }
-
-// subSat16 is silk_SUB_SAT16.
-func subSat16(a, b int16) int16 { return int16(sat16(int32(a) - int32(b))) }
-
-// addSat64 is silk_ADD_SAT64.
-func addSat64(a, b int64) int64 {
-	s := int64(uint64(a) + uint64(b))
-	if uint64(s)&0x8000000000000000 == 0 {
-		if uint64(a&b)&0x8000000000000000 != 0 {
-			return int64MIN
-		}
-		return s
-	}
-	if uint64(a|b)&0x8000000000000000 == 0 {
-		return int64MAX
-	}
-	return s
-}
-
-// subSat64 is silk_SUB_SAT64.
-func subSat64(a, b int64) int64 {
-	s := int64(uint64(a) - uint64(b))
-	if uint64(s)&0x8000000000000000 == 0 {
-		if uint64(a)&(uint64(b)^0x8000000000000000)&0x8000000000000000 != 0 {
-			return int64MIN
-		}
-		return s
-	}
-	if (uint64(a)^0x8000000000000000)&uint64(b)&0x8000000000000000 != 0 {
-		return int64MAX
-	}
-	return s
-}
-
-// posSat32 is silk_POS_SAT32 for a 64-bit argument.
-func posSat32(a int64) int32 {
-	if a > int64(int32MAX) {
-		return int32MAX
-	}
-	return int32(a)
-}
 
 // addPosSat32 is silk_ADD_POS_SAT32.
 func addPosSat32(a, b int32) int32 {
@@ -162,20 +93,8 @@ func addPosSat32(a, b int32) int32 {
 // lshift is silk_LSHIFT / silk_LSHIFT32 (shift >= 0, shift < 32).
 func lshift(a int32, shift int) int32 { return int32(uint32(a) << uint(shift)) }
 
-// lshift64 is silk_LSHIFT64.
-func lshift64(a int64, shift int) int64 { return int64(uint64(a) << uint(shift)) }
-
 // lshiftOvflw is silk_LSHIFT_ovflw.
 func lshiftOvflw(a int32, shift int) int32 { return int32(uint32(a) << uint(shift)) }
-
-// rshift is silk_RSHIFT / silk_RSHIFT32 (arithmetic shift).
-func rshift(a int32, shift int) int32 { return a >> uint(shift) }
-
-// rshift64 is silk_RSHIFT64.
-func rshift64(a int64, shift int) int64 { return a >> uint(shift) }
-
-// rshiftUint is silk_RSHIFT_uint.
-func rshiftUint(a uint32, shift int) uint32 { return a >> uint(shift) }
 
 // lshiftSat32 is silk_LSHIFT_SAT32: saturates before shifting.
 func lshiftSat32(a int32, shift int) int32 {
@@ -210,16 +129,6 @@ func rshiftRound64(a int64, shift int) int64 {
 	return ((a >> uint(shift-1)) + 1) >> 1
 }
 
-// nshiftMul32_32 is silk_NSHIFT_MUL_32_32.
-func nshiftMul32_32(a, b int32) int32 {
-	return -(31 - (32 - clz32(abs32(a)) + (32 - clz32(abs32(b)))))
-}
-
-// nshiftMul16_16 is silk_NSHIFT_MUL_16_16.
-func nshiftMul16_16(a, b int16) int32 {
-	return -(15 - (16 - clz16(abs16(a)) + (16 - clz16(abs16(b)))))
-}
-
 // fixConst is SILK_FIX_CONST for constants evaluated at run time. Prefer
 // precomputed constants where the C code uses SILK_FIX_CONST on literals.
 func fixConst(c float64, q uint) int32 {
@@ -248,14 +157,6 @@ func maxInt(a, b int) int {
 	return b
 }
 
-// min16 is silk_min_16.
-func min16(a, b int16) int16 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // max16 is silk_max_16.
 func max16(a, b int16) int16 {
 	if a > b {
@@ -274,22 +175,6 @@ func min32(a, b int32) int32 {
 
 // max32 is silk_max_32 / silk_max for int32.
 func max32(a, b int32) int32 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-// min64 is silk_min_64.
-func min64(a, b int64) int64 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// max64 is silk_max_64.
-func max64(a, b int64) int64 {
 	if a > b {
 		return a
 	}
@@ -344,42 +229,12 @@ func abs32(a int32) int32 {
 	return -a
 }
 
-// abs16 is silk_abs for int16 (wrong for int16MIN, as in C).
-func abs16(a int16) int16 {
-	if a > 0 {
-		return a
-	}
-	return -a
-}
-
 // absInt is silk_abs for int.
 func absInt(a int) int {
 	if a > 0 {
 		return a
 	}
 	return -a
-}
-
-// absInt32 is silk_abs_int32.
-func absInt32(a int32) int32 { return (a ^ (a >> 31)) - (a >> 31) }
-
-// abs64 is silk_abs_int64.
-func abs64(a int64) int64 {
-	if a > 0 {
-		return a
-	}
-	return -a
-}
-
-// sign is silk_sign.
-func sign(a int32) int32 {
-	if a > 0 {
-		return 1
-	}
-	if a < 0 {
-		return -1
-	}
-	return 0
 }
 
 // Pseudo-random generator constants (RAND_MULTIPLIER, RAND_INCREMENT).

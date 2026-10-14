@@ -4,6 +4,9 @@ package silk
 
 // decodeParameters is silk_decode_parameters: decode parameters from
 // payload.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psDec *decoderState) decodeParameters(psDecCtrl *decoderControl, condCoding int) {
 	var pNLSFQ15, pNLSF0Q15 [maxLPCOrder]int16
 
@@ -28,8 +31,10 @@ func (psDec *decoderState) decodeParameters(psDecCtrl *decoderControl, condCodin
 		// Calculation of the interpolated NLSF0 vector from the
 		// interpolation factor, the previous NLSF1, and the current NLSF1.
 		for i := 0; i < psDec.lpcOrder; i++ {
-			pNLSF0Q15[i] = int16(int32(psDec.prevNLSFQ15[i]) + (int32(psDec.indices.nlsfInterpCoefQ2)*
-				(int32(pNLSFQ15[i])-int32(psDec.prevNLSFQ15[i])))>>2)
+			pNLSF0Q15[i] = int16(
+				int32(psDec.prevNLSFQ15[i]) + (int32(psDec.indices.nlsfInterpCoefQ2)*
+					(int32(pNLSFQ15[i])-int32(psDec.prevNLSFQ15[i])))>>2,
+			)
 		}
 
 		// Convert NLSF parameters to AR prediction filter coefficients.
@@ -50,7 +55,13 @@ func (psDec *decoderState) decodeParameters(psDecCtrl *decoderControl, condCodin
 	if psDec.indices.signalType == typeVoiced {
 		// Decode pitch lags.
 		// Decode pitch values.
-		decodePitch(psDec.indices.lagIndex, psDec.indices.contourIndex, psDecCtrl.pitchL[:], psDec.fsKHz, psDec.nbSubfr)
+		decodePitch(
+			psDec.indices.lagIndex,
+			psDec.indices.contourIndex,
+			psDecCtrl.pitchL[:],
+			psDec.fsKHz,
+			psDec.nbSubfr,
+		)
 
 		// Decode Codebook Index.
 		cbkPtrQ7 := ltpVqPtrsQ7[psDec.indices.perIndex] // set pointer to start of codebook

@@ -56,11 +56,12 @@ func (psEncC *encoderState) controlSNR(targetRateBps int32) int {
 	if psEncC.nbSubfr == 2 {
 		targetRateBps -= 2000 + int32(psEncC.fsKHz/16)
 	}
-	if psEncC.fsKHz == 8 {
+	switch psEncC.fsKHz {
+	case 8:
 		snrTable = targetRateNB21[:]
-	} else if psEncC.fsKHz == 12 {
+	case 12:
 		snrTable = targetRateMB21[:]
-	} else {
+	default:
 		snrTable = targetRateWB21[:]
 	}
 	bound := len(snrTable)

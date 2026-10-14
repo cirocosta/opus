@@ -4,6 +4,9 @@ package silk
 
 // controlAudioBandwidth is silk_control_audio_bandwidth: control the
 // internal sampling rate. It returns the internal sampling rate in kHz.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psEncC *encoderState) controlAudioBandwidth(encControl *EncControl) int {
 	origKHz := psEncC.fsKHz
 	// Handle a bandwidth-switching reset where we need to be aware what

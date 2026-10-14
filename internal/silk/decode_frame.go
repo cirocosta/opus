@@ -6,7 +6,12 @@ import "github.com/cirocosta/opus/internal/entcode"
 
 // decodeFrame is silk_decode_frame: decode one frame into pOut and
 // return its length.
-func (psDec *decoderState) decodeFrame(psRangeDec *entcode.Decoder, pOut []int16, lostFlag int, condCoding int) (pN int, ret int) {
+func (psDec *decoderState) decodeFrame(
+	psRangeDec *entcode.Decoder,
+	pOut []int16,
+	lostFlag int,
+	condCoding int,
+) (pN int, ret int) {
 	psDecCtrl := &psDec.scratch.ctrl
 	*psDecCtrl = decoderControl{}
 

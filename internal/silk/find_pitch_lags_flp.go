@@ -5,7 +5,12 @@ package silk
 // findPitchLagsFLP is silk_find_pitch_lags_FLP. x[xOff] is the C x
 // pointer (start of the frame, with ltp_mem_length samples of history
 // before it). res receives the residual.
-func (psEnc *encoderStateFLP) findPitchLagsFLP(psEncCtrl *encoderControlFLP, res []float32, x []float32, xOff int) {
+func (psEnc *encoderStateFLP) findPitchLagsFLP(
+	psEncCtrl *encoderControlFLP,
+	res []float32,
+	x []float32,
+	xOff int,
+) {
 	var (
 		autoCorr [maxFindPitchLPCOrd + 1]float32
 		a        [maxFindPitchLPCOrd]float32
@@ -39,7 +44,12 @@ func (psEnc *encoderStateFLP) findPitchLagsFLP(psEncCtrl *encoderControlFLP, res
 	applySineWindowFLP(wsig[wsigPtr:], x[xBufPtr:], 2, psEnc.sCmn.laPitch)
 
 	// Calculate autocorrelation sequence.
-	autocorrelationFLP(autoCorr[:], wsig[:], psEnc.sCmn.pitchLPCWinLength, psEnc.sCmn.pitchEstimationLPCOrder+1)
+	autocorrelationFLP(
+		autoCorr[:],
+		wsig[:],
+		psEnc.sCmn.pitchLPCWinLength,
+		psEnc.sCmn.pitchEstimationLPCOrder+1,
+	)
 
 	// Add white noise, as a fraction of the energy.
 	autoCorr[0] += float32(autoCorr[0]*findPitchWhiteNoiseFraction) + 1
@@ -59,7 +69,8 @@ func (psEnc *encoderStateFLP) findPitchLagsFLP(psEncCtrl *encoderControlFLP, res
 	// LPC analysis filtering.
 	lpcAnalysisFilterFLP(res, a[:], x[xBuf:], bufLen, psEnc.sCmn.pitchEstimationLPCOrder)
 
-	if psEnc.sCmn.indices.signalType != typeNoVoiceActivity && psEnc.sCmn.firstFrameAfterReset == 0 {
+	if psEnc.sCmn.indices.signalType != typeNoVoiceActivity &&
+		psEnc.sCmn.firstFrameAfterReset == 0 {
 		// Threshold for pitch estimator.
 		thrhld := float32(0.6)
 		thrhld -= float32(0.004 * float32(psEnc.sCmn.pitchEstimationLPCOrder))
@@ -68,10 +79,19 @@ func (psEnc *encoderStateFLP) findPitchLagsFLP(psEncCtrl *encoderControlFLP, res
 		thrhld -= float32(float32(0.1*float32(psEnc.sCmn.inputTiltQ15)) * (1.0 / 32768.0))
 
 		// Call Pitch estimator.
-		if pitchAnalysisCoreFLP(res, &psEncCtrl.pitchL, &psEnc.sCmn.indices.lagIndex,
-			&psEnc.sCmn.indices.contourIndex, &psEnc.ltpCorr, psEnc.sCmn.prevLag,
+		if pitchAnalysisCoreFLP(
+			res,
+			&psEncCtrl.pitchL,
+			&psEnc.sCmn.indices.lagIndex,
+			&psEnc.sCmn.indices.contourIndex,
+			&psEnc.ltpCorr,
+			psEnc.sCmn.prevLag,
 			float32(psEnc.sCmn.pitchEstimationThresholdQ16)/65536.0,
-			thrhld, psEnc.sCmn.fsKHz, psEnc.sCmn.pitchEstimationComplexity, psEnc.sCmn.nbSubfr) == 0 {
+			thrhld,
+			psEnc.sCmn.fsKHz,
+			psEnc.sCmn.pitchEstimationComplexity,
+			psEnc.sCmn.nbSubfr,
+		) == 0 {
 			psEnc.sCmn.indices.signalType = typeVoiced
 		} else {
 			psEnc.sCmn.indices.signalType = typeUnvoiced

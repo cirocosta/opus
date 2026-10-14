@@ -50,8 +50,7 @@ const (
 	bgSNRDecrDB = float32(2.0)
 	// Factor for reducing quantization noise during voiced speech.
 	harmSNRIncrDB = float32(2.0)
-	// Factor for reducing quantization noise for unvoiced sparse signals.
-	sparseSNRIncrDB = float32(2.0)
+
 	// Threshold for sparseness measure above which to use lower
 	// quantization offset during unvoiced.
 	energyVariationThresholdQntOffset = float32(0.6)
@@ -70,11 +69,7 @@ const (
 	// Parameter for shaping noise even more towards higher frequencies
 	// during voiced speech.
 	harmHPNoiseCoef = float32(0.35)
-	// Parameter for applying a high-pass tilt to the input signal.
-	inputTilt = float32(0.05)
-	// Parameter for extra high-pass tilt to the input signal at high
-	// rates.
-	highRateInputTilt = float32(0.1)
+
 	// Parameter for reducing noise at the very low frequencies.
 	lowFreqShaping = float32(4.0)
 	// Less reduction of noise at the very low frequencies for signals
@@ -90,9 +85,6 @@ const (
 	lambdaInputQuality     = float32(-0.1)
 	lambdaCodingQuality    = float32(-0.2)
 	lambdaQuantOffset      = float32(0.8)
-
-	// Compensation in bitrate calculations for 10 ms modes.
-	reduceBitrate10MsBps = 2200
 
 	// Maximum time before allowing a bandwidth transition.
 	maxBandwidthSwitchDelayMs = 5000

@@ -4,11 +4,17 @@ package silk
 
 // Constants of silk_stereo_LR_to_MS.
 var (
-	stereoSmoothCoef10MsQ16 = fixConst(stereoRatioSmoothCoef/2, 16) // SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF / 2, 16 )
-	stereoSmoothCoefQ16     = fixConst(stereoRatioSmoothCoef, 16)   // SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF, 16 )
-	stereoWidth005Q14       = fixConst(0.05, 14)                    // SILK_FIX_CONST( 0.05, 14 )
-	stereoWidth002Q14       = fixConst(0.02, 14)                    // SILK_FIX_CONST( 0.02, 14 )
-	stereoWidth095Q14       = fixConst(0.95, 14)                    // SILK_FIX_CONST( 0.95, 14 )
+	stereoSmoothCoef10MsQ16 = fixConst(
+		stereoRatioSmoothCoef/2,
+		16,
+	) // SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF / 2, 16 )
+	stereoSmoothCoefQ16 = fixConst(
+		stereoRatioSmoothCoef,
+		16,
+	) // SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF, 16 )
+	stereoWidth005Q14 = fixConst(0.05, 14) // SILK_FIX_CONST( 0.05, 14 )
+	stereoWidth002Q14 = fixConst(0.02, 14) // SILK_FIX_CONST( 0.02, 14 )
+	stereoWidth095Q14 = fixConst(0.95, 14) // SILK_FIX_CONST( 0.95, 14 )
 )
 
 // stereoLRToMS is silk_stereo_LR_to_MS: convert a Left/Right stereo
@@ -16,9 +22,13 @@ var (
 // inputBuf arrays of the two channels: the C x1 and x2 pointers are
 // &x1buf[ 2 ] and &x2buf[ 2 ]. The left input becomes the mid signal and
 // the right input becomes the side signal. sc holds the scratch buffers.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func stereoLRToMS(state *stereoEncState, x1buf, x2buf []int16, ix *[2][3]int8, midOnlyFlag *int8,
 	midSideRatesBps *[2]int32, totalRateBps int32, prevSpeechActQ8, toMono, fsKHz, frameLength int,
-	sc *stereoScratch) {
+	sc *stereoScratch,
+) {
 	var predQ13 [2]int32
 	side := sc.side[:frameLength+2]
 	mid := x1buf // mid = &x1[ -2 ]
@@ -66,8 +76,20 @@ func stereoLRToMS(state *stereoEncState, x1buf, x2buf []int16, ix *[2][3]int8, m
 	smoothCoefQ16 = smulwb(smulbb(int32(prevSpeechActQ8), int32(prevSpeechActQ8)), smoothCoefQ16)
 
 	var lpRatioQ14, hpRatioQ14 int32
-	predQ13[0], lpRatioQ14 = stereoFindPredictor(lpMid, lpSide, state.midSideAmpQ0[0:2], frameLength, int(smoothCoefQ16))
-	predQ13[1], hpRatioQ14 = stereoFindPredictor(hpMid, hpSide, state.midSideAmpQ0[2:4], frameLength, int(smoothCoefQ16))
+	predQ13[0], lpRatioQ14 = stereoFindPredictor(
+		lpMid,
+		lpSide,
+		state.midSideAmpQ0[0:2],
+		frameLength,
+		int(smoothCoefQ16),
+	)
+	predQ13[1], hpRatioQ14 = stereoFindPredictor(
+		hpMid,
+		hpSide,
+		state.midSideAmpQ0[2:4],
+		frameLength,
+		int(smoothCoefQ16),
+	)
 	// Ratio of the norms of residual and mid signals.
 	fracQ16 := smlabb(hpRatioQ14, lpRatioQ14, 3)
 	fracQ16 = min32(fracQ16, 1<<16)
@@ -102,7 +124,9 @@ func stereoLRToMS(state *stereoEncState, x1buf, x2buf []int16, ix *[2][3]int8, m
 	}
 
 	// Smoother.
-	state.smthWidthQ14 = int16(smlawb(int32(state.smthWidthQ14), widthQ14-int32(state.smthWidthQ14), smoothCoefQ16))
+	state.smthWidthQ14 = int16(
+		smlawb(int32(state.smthWidthQ14), widthQ14-int32(state.smthWidthQ14), smoothCoefQ16),
+	)
 
 	// At very low bitrates or for inputs that are nearly amplitude
 	// panned, switch to panned-mono coding.

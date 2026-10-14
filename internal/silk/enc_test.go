@@ -122,7 +122,13 @@ func (sc *encScenario) schedule() []encPacketCtl {
 				a, b, d := internalRates[rng.intn(3)], internalRates[rng.intn(3)], internalRates[rng.intn(3)]
 				lo, hi := min(a, b), max(a, b)
 				d = max(lo, min(hi, d))
-				base.MinInternalSampleRate, base.MaxInternalSampleRate, base.DesiredInternalSampleRate = int32(lo), int32(hi), int32(d)
+				base.MinInternalSampleRate, base.MaxInternalSampleRate, base.DesiredInternalSampleRate = int32(
+					lo,
+				), int32(
+					hi,
+				), int32(
+					d,
+				)
 			}
 			if sc.ch == 2 && rng.intn(15) == 0 {
 				base.NChannelsInternal = int32(3 - int(base.NChannelsInternal))
@@ -184,7 +190,16 @@ func fnvBytes(h uint64, b []byte) uint64 {
 const fnvOffset = 14695981039346656037
 
 // encPacketLine formats one output line, as the C driver prints it.
-func encPacketLine(idx int, p *encPacketCtl, ret int, nBytes int32, tell int, rng uint32, c *EncControl, h uint64) string {
+func encPacketLine(
+	idx int,
+	p *encPacketCtl,
+	ret int,
+	nBytes int32,
+	tell int,
+	rng uint32,
+	c *EncControl,
+	h uint64,
+) string {
 	return fmt.Sprintf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %016x",
 		idx, p.prefill, ret, nBytes, tell, rng, c.SwitchReady, c.InternalSampleRate,
 		c.InWBmodeWithoutVariableLP, c.StereoWidthQ14, c.SignalType, c.Offset,
@@ -310,18 +325,36 @@ func encScenarios() []encScenario {
 		}
 	}
 	// Long enough for the VAD counter to reach its limit (20 s).
-	list = append(list, encScenario{name: "long_16000_2", seed: 999, apiRate: 16000, ch: 2, ms: 22000,
+	list = append(list, encScenario{
+		name: "long_16000_2", seed: 999, apiRate: 16000, ch: 2, ms: 22000,
 		internalCh: 2, payloadMs: 20, bitRate: 14000, complexity: 3, maxRate: 16000, minRate: 8000,
-		desRate: 16000, maxBytes: 1275, dtx: 1})
+		desRate: 16000, maxBytes: 1275, dtx: 1,
+	})
 	// Randomly varying controls.
 	for i := 0; i < 24; i++ {
 		rate := []int{8000, 12000, 16000, 24000, 48000}[i%5]
 		ch := 1 + (i/5)%2
 		seed++
 		list = append(list, encScenario{
-			name: fmt.Sprintf("vary_%d_%d_%d", i, rate, ch), seed: seed, apiRate: rate, ch: ch, ms: 6000,
-			internalCh: ch, payloadMs: 20, bitRate: 20000, complexity: 5, maxRate: 16000, minRate: 8000,
-			desRate: 16000, maxBytes: 1275, vary: true,
+			name: fmt.Sprintf(
+				"vary_%d_%d_%d",
+				i,
+				rate,
+				ch,
+			),
+			seed:       seed,
+			apiRate:    rate,
+			ch:         ch,
+			ms:         6000,
+			internalCh: ch,
+			payloadMs:  20,
+			bitRate:    20000,
+			complexity: 5,
+			maxRate:    16000,
+			minRate:    8000,
+			desRate:    16000,
+			maxBytes:   1275,
+			vary:       true,
 		})
 	}
 	return list
@@ -356,19 +389,60 @@ func encVectorScenarios() []encScenario {
 		src := fmt.Sprintf("testvector%02d", v)
 		seed := uint32(1000 + 10*v)
 		list = append(list,
-			encScenario{name: src + "_vary", src: src, seed: seed, apiRate: rates[v%5], ch: 1 + v%2,
+			encScenario{
+				name: src + "_vary", src: src, seed: seed, apiRate: rates[v%5], ch: 1 + v%2,
 				internalCh: 1 + v%2, payloadMs: 20, bitRate: 20000, complexity: 5, maxRate: 16000,
-				minRate: 8000, desRate: 16000, maxBytes: 1275, vary: true},
-			encScenario{name: src + "_c10", src: src, seed: seed + 1, apiRate: 48000, ch: 2, internalCh: 2,
-				payloadMs: 20, bitRate: 24000 + 1000*v, complexity: 10, maxRate: 16000, minRate: 8000,
-				desRate: 16000, maxBytes: 1275},
-			encScenario{name: src + "_c0dtx", src: src, seed: seed + 2, apiRate: 16000, ch: 1, internalCh: 1,
-				payloadMs: 60, bitRate: 6000 + 500*v, complexity: 0, maxRate: 12000 + 4000*(v%2),
-				minRate: 8000, desRate: 12000, maxBytes: 1275, dtx: 1},
-			encScenario{name: src + "_fec", src: src, seed: seed + 3, apiRate: rates[(v+2)%5], ch: 2,
-				internalCh: 2, payloadMs: [4]int{10, 20, 40, 60}[v%4], bitRate: 16000 + 2000*v, complexity: v % 11,
-				maxRate: 16000, minRate: 8000, desRate: internalRates[v%3], maxBytes: 1275, fec: 1,
-				loss: 5 * (v % 7), cbr: v % 2},
+				minRate: 8000, desRate: 16000, maxBytes: 1275, vary: true,
+			},
+			encScenario{
+				name:       src + "_c10",
+				src:        src,
+				seed:       seed + 1,
+				apiRate:    48000,
+				ch:         2,
+				internalCh: 2,
+				payloadMs:  20,
+				bitRate:    24000 + 1000*v,
+				complexity: 10,
+				maxRate:    16000,
+				minRate:    8000,
+				desRate:    16000,
+				maxBytes:   1275,
+			},
+			encScenario{
+				name:       src + "_c0dtx",
+				src:        src,
+				seed:       seed + 2,
+				apiRate:    16000,
+				ch:         1,
+				internalCh: 1,
+				payloadMs:  60,
+				bitRate:    6000 + 500*v,
+				complexity: 0,
+				maxRate:    12000 + 4000*(v%2),
+				minRate:    8000,
+				desRate:    12000,
+				maxBytes:   1275,
+				dtx:        1,
+			},
+			encScenario{
+				name:       src + "_fec",
+				src:        src,
+				seed:       seed + 3,
+				apiRate:    rates[(v+2)%5],
+				ch:         2,
+				internalCh: 2,
+				payloadMs:  [4]int{10, 20, 40, 60}[v%4],
+				bitRate:    16000 + 2000*v,
+				complexity: v % 11,
+				maxRate:    16000,
+				minRate:    8000,
+				desRate:    internalRates[v%3],
+				maxBytes:   1275,
+				fec:        1,
+				loss:       5 * (v % 7),
+				cbr:        v % 2,
+			},
 		)
 	}
 	return list
@@ -386,9 +460,13 @@ func TestWriteEncGoldenInputs(t *testing.T) {
 		for _, sc := range scs {
 			pcm := encScenarioPCM(t, &sc)
 			writeEncInputs(t, dir, &sc, pcm)
-			fmt.Fprintf(&list, "%s %d\n", sc.name, sc.ch)
+			_, _ = fmt.Fprintf(&list, "%s %d\n", sc.name, sc.ch)
 		}
-		if err := os.WriteFile(filepath.Join(dir, listName), []byte(list.String()), 0o644); err != nil {
+		if err := os.WriteFile(
+			filepath.Join(dir, listName),
+			[]byte(list.String()),
+			0o644,
+		); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -411,7 +489,11 @@ func writeEncInputs(t *testing.T, dir string, sc *encScenario, pcm []int16) {
 		sb.WriteString(p.scriptLine())
 		sb.WriteByte('\n')
 	}
-	if err := os.WriteFile(filepath.Join(dir, sc.name+".txt"), []byte(sb.String()), 0o644); err != nil {
+	if err := os.WriteFile(
+		filepath.Join(dir, sc.name+".txt"),
+		[]byte(sb.String()),
+		0o644,
+	); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -428,7 +510,7 @@ func readEncGoldens(t *testing.T, path string) map[string]*encGolden {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	g := map[string]*encGolden{}
 	s := bufio.NewScanner(f)
 	for s.Scan() {
@@ -441,7 +523,9 @@ func readEncGoldens(t *testing.T, path string) map[string]*encGolden {
 		case "s":
 			var n int
 			var h string
-			fmt.Sscanf(fields[2], "%d %s", &n, &h)
+			if _, err := fmt.Sscanf(fields[2], "%d %s", &n, &h); err != nil {
+				t.Fatal(err)
+			}
 			g[fields[1]] = &encGolden{lines: n, hash: h}
 		case "l":
 			g[fields[1]].samples = append(g[fields[1]].samples, fields[2])
@@ -477,7 +561,14 @@ func checkEncScenario(t *testing.T, name string, lines []string, g *encGolden) {
 		}
 	}
 	if len(lines) != g.lines || hashLines(lines) != g.hash {
-		t.Fatalf("%s: got %d lines hash %s, want %d lines hash %s", name, len(lines), hashLines(lines), g.lines, g.hash)
+		t.Fatalf(
+			"%s: got %d lines hash %s, want %d lines hash %s",
+			name,
+			len(lines),
+			hashLines(lines),
+			g.lines,
+			g.hash,
+		)
 	}
 }
 
@@ -494,7 +585,13 @@ func TestEncodeGoldens(t *testing.T) {
 		pcm := encScenarioPCM(t, &sc)
 		lines := r.run(pcm, sc.schedule(), sc.ch)
 		if dump != "" {
-			os.WriteFile(filepath.Join(dump, sc.name+".go.out"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+			if err := os.WriteFile(
+				filepath.Join(dump, sc.name+".go.out"),
+				[]byte(strings.Join(lines, "\n")+"\n"),
+				0o644,
+			); err != nil {
+				t.Fatal(err)
+			}
 		}
 		checkEncScenario(t, sc.name, lines, g[sc.name])
 	}
@@ -514,7 +611,13 @@ func TestEncodeVectors(t *testing.T) {
 		pcm := encScenarioPCM(t, &sc)
 		lines := r.run(pcm, sc.schedule(), sc.ch)
 		if dump != "" {
-			os.WriteFile(filepath.Join(dump, sc.name+".go.out"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+			if err := os.WriteFile(
+				filepath.Join(dump, sc.name+".go.out"),
+				[]byte(strings.Join(lines, "\n")+"\n"),
+				0o644,
+			); err != nil {
+				t.Fatal(err)
+			}
 		}
 		checkEncScenario(t, sc.name, lines, g[sc.name])
 	}
@@ -523,12 +626,18 @@ func TestEncodeVectors(t *testing.T) {
 // TestEncodeAllocs checks that Encode does not allocate.
 func TestEncodeAllocs(t *testing.T) {
 	for _, sc := range []encScenario{
-		{name: "mono", seed: 5, apiRate: 48000, ch: 1, ms: 4000, internalCh: 1, payloadMs: 20, bitRate: 20000,
-			complexity: 10, maxRate: 16000, minRate: 8000, desRate: 16000, maxBytes: 1275, fec: 1, loss: 10},
-		{name: "stereo", seed: 6, apiRate: 24000, ch: 2, ms: 4000, internalCh: 2, payloadMs: 60, bitRate: 30000,
-			complexity: 2, maxRate: 12000, minRate: 8000, desRate: 12000, maxBytes: 1275, dtx: 1, cbr: 1},
-		{name: "vary", seed: 7, apiRate: 16000, ch: 2, ms: 8000, internalCh: 2, payloadMs: 20, bitRate: 20000,
-			complexity: 5, maxRate: 16000, minRate: 8000, desRate: 16000, maxBytes: 1275, vary: true},
+		{
+			name: "mono", seed: 5, apiRate: 48000, ch: 1, ms: 4000, internalCh: 1, payloadMs: 20, bitRate: 20000,
+			complexity: 10, maxRate: 16000, minRate: 8000, desRate: 16000, maxBytes: 1275, fec: 1, loss: 10,
+		},
+		{
+			name: "stereo", seed: 6, apiRate: 24000, ch: 2, ms: 4000, internalCh: 2, payloadMs: 60, bitRate: 30000,
+			complexity: 2, maxRate: 12000, minRate: 8000, desRate: 12000, maxBytes: 1275, dtx: 1, cbr: 1,
+		},
+		{
+			name: "vary", seed: 7, apiRate: 16000, ch: 2, ms: 8000, internalCh: 2, payloadMs: 20, bitRate: 20000,
+			complexity: 5, maxRate: 16000, minRate: 8000, desRate: 16000, maxBytes: 1275, vary: true,
+		},
 	} {
 		pcm := encScenarioPCM(t, &sc)
 		sched := sc.schedule()

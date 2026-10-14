@@ -69,6 +69,9 @@ const (
 
 // resamplerInit is silk_resampler_init: initialize or reset the
 // resampler state for a given pair of input/output sampling rates.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func resamplerInit(s *resamplerState, fsHzIn, fsHzOut int32, forEnc bool) int {
 	// Clear state.
 	*s = resamplerState{}

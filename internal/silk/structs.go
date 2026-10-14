@@ -303,9 +303,6 @@ type encoderState struct {
 	nChannelsInternal int
 	channelNb         int
 
-	// Parameters for LTP scaling control.
-	framesSinceOnset int
-
 	// Specifically for entropy coding.
 	ecPrevSignalType int
 	ecPrevLagIndex   int16

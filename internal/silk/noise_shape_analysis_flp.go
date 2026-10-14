@@ -21,6 +21,9 @@ func warpedGain(coefs []float32, lambda float32, order int) float32 {
 // filter coefficients to monic pseudo-warped coefficients and limit the
 // maximum amplitude of monic warped coefficients by using bandwidth
 // expansion on the true coefficients.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func warpedTrue2MonicCoefs(coefs []float32, lambda, limit float32, order int) {
 	ind := 0
 
@@ -59,7 +62,9 @@ func warpedTrue2MonicCoefs(coefs []float32, lambda, limit float32, order int) {
 		}
 
 		// Apply bandwidth expansion.
-		chirp := 0.99 - float32(float32((0.8+float32(0.1*float32(iter)))*(maxabs-limit))/float32(maxabs*float32(ind+1)))
+		chirp := 0.99 - float32(
+			float32((0.8+float32(0.1*float32(iter)))*(maxabs-limit))/float32(maxabs*float32(ind+1)),
+		)
 		bwexpanderFLP(coefs, order, chirp)
 
 		// Convert to monic warped coefficients.
@@ -93,7 +98,9 @@ func limitCoefs(coefs []float32, limit float32, order int) {
 		}
 
 		// Apply bandwidth expansion.
-		chirp := 0.99 - float32(float32((0.8+float32(0.1*float32(iter)))*(maxabs-limit))/float32(maxabs*float32(ind+1)))
+		chirp := 0.99 - float32(
+			float32((0.8+float32(0.1*float32(iter)))*(maxabs-limit))/float32(maxabs*float32(ind+1)),
+		)
 		bwexpanderFLP(coefs, order, chirp)
 	}
 }
@@ -101,8 +108,16 @@ func limitCoefs(coefs []float32, limit float32, order int) {
 // noiseShapeAnalysisFLP is silk_noise_shape_analysis_FLP: compute noise
 // shaping coefficients and initial gain values. pitchRes[resOff] and
 // x[xOff] are the C pitch_res and x pointers.
-func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP, pitchRes []float32, resOff int,
-	x []float32, xOff int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(
+	psEncCtrl *encoderControlFLP,
+	pitchRes []float32,
+	resOff int,
+	x []float32,
+	xOff int,
+) {
 	var (
 		xWindowed [shapeLPCWinMax]float32
 		autoCorr  [maxShapeLPCOrder + 1]float32
@@ -118,7 +133,11 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 
 	// Input quality is the average of the quality in the lowest two VAD
 	// bands.
-	psEncCtrl.inputQuality = float32(float32(0.5*float32(psEnc.sCmn.inputQualityBandsQ15[0]+psEnc.sCmn.inputQualityBandsQ15[1])) * (1.0 / 32768.0))
+	psEncCtrl.inputQuality = float32(
+		float32(
+			0.5*float32(psEnc.sCmn.inputQualityBandsQ15[0]+psEnc.sCmn.inputQualityBandsQ15[1]),
+		) * (1.0 / 32768.0),
+	)
 
 	// Coding quality level, between 0.0 and 1.0.
 	psEncCtrl.codingQuality = sigmoid(float32(0.25 * (snrAdjDB - 20.0)))
@@ -126,7 +145,15 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 	if psEnc.sCmn.useCBR == 0 {
 		// Reduce coding SNR during low speech activity.
 		b := 1.0 - float32(float32(psEnc.sCmn.speechActivityQ8)*(1.0/256.0))
-		snrAdjDB -= float32(float32(float32(float32(bgSNRDecrDB*psEncCtrl.codingQuality)*(0.5+float32(0.5*psEncCtrl.inputQuality)))*b) * b)
+		snrAdjDB -= float32(
+			float32(
+				float32(
+					float32(
+						bgSNRDecrDB*psEncCtrl.codingQuality,
+					)*(0.5+float32(0.5*psEncCtrl.inputQuality)),
+				)*b,
+			) * b,
+		)
 	}
 
 	if psEnc.sCmn.indices.signalType == typeVoiced {
@@ -135,7 +162,9 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 	} else {
 		// For unvoiced signals and low-quality input, adjust the quality
 		// slower than SNR_dB setting.
-		snrAdjDB += float32((float32(float32(-0.4*float32(psEnc.sCmn.snrDBQ7))*(1/128.0)) + 6.0) * (1.0 - psEncCtrl.inputQuality))
+		snrAdjDB += float32(
+			(float32(float32(-0.4*float32(psEnc.sCmn.snrDBQ7))*(1/128.0)) + 6.0) * (1.0 - psEncCtrl.inputQuality),
+		)
 	}
 
 	// SPARSENESS PROCESSING.
@@ -176,7 +205,11 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 
 	// Slightly more warping in analysis will move quantization noise up in
 	// frequency, where it's better masked.
-	warping := float32(float32(psEnc.sCmn.warpingQ16)/65536.0) + float32(0.01*psEncCtrl.codingQuality)
+	warping := float32(
+		float32(psEnc.sCmn.warpingQ16)/65536.0,
+	) + float32(
+		0.01*psEncCtrl.codingQuality,
+	)
 
 	// Compute noise shaping AR coefs and gains.
 	for k := 0; k < psEnc.sCmn.nbSubfr; k++ {
@@ -200,7 +233,12 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 				psEnc.sCmn.shapeWinLength, psEnc.sCmn.shapingLPCOrder)
 		} else {
 			// Calculate regular auto correlation.
-			autocorrelationFLP(autoCorr[:], xWindowed[:], psEnc.sCmn.shapeWinLength, psEnc.sCmn.shapingLPCOrder+1)
+			autocorrelationFLP(
+				autoCorr[:],
+				xWindowed[:],
+				psEnc.sCmn.shapeWinLength,
+				psEnc.sCmn.shapingLPCOrder+1,
+			)
 		}
 
 		// Add white noise, as a fraction of energy.
@@ -215,7 +253,9 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 
 		if psEnc.sCmn.warpingQ16 > 0 {
 			// Adjust gain for warping.
-			psEncCtrl.gains[k] = float32(psEncCtrl.gains[k] * warpedGain(ar, warping, psEnc.sCmn.shapingLPCOrder))
+			psEncCtrl.gains[k] = float32(
+				psEncCtrl.gains[k] * warpedGain(ar, warping, psEnc.sCmn.shapingLPCOrder),
+			)
 		}
 
 		// Bandwidth expansion for synthesis filter shaping.
@@ -242,7 +282,9 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 
 	// Control low-frequency shaping and noise tilt.
 	// Less low frequency shaping for noisy inputs.
-	strength = float32(lowFreqShaping * (1.0 + float32(lowQualityLowFreqShapingDecr*(float32(float32(psEnc.sCmn.inputQualityBandsQ15[0])*(1.0/32768.0))-1.0))))
+	strength = float32(
+		lowFreqShaping * (1.0 + float32(lowQualityLowFreqShapingDecr*(float32(float32(psEnc.sCmn.inputQualityBandsQ15[0])*(1.0/32768.0))-1.0))),
+	)
 	strength = float32(strength * float32(float32(psEnc.sCmn.speechActivityQ8)*(1.0/256.0)))
 	var tilt float32
 	if psEnc.sCmn.indices.signalType == typeVoiced {
@@ -255,7 +297,11 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 			psEncCtrl.lfARShp[k] = 1.0 - b - float32(b*strength)
 		}
 		tilt = -hpNoiseCoef -
-			float32(float32(float32((1-hpNoiseCoef)*harmHPNoiseCoef)*float32(psEnc.sCmn.speechActivityQ8))*(1.0/256.0))
+			float32(
+				float32(
+					float32((1-hpNoiseCoef)*harmHPNoiseCoef)*float32(psEnc.sCmn.speechActivityQ8),
+				)*(1.0/256.0),
+			)
 	} else {
 		b := 1.3 / float32(psEnc.sCmn.fsKHz)
 		psEncCtrl.lfMAShp[0] = -1.0 + b
@@ -285,7 +331,9 @@ func (psEnc *encoderStateFLP) noiseShapeAnalysisFLP(psEncCtrl *encoderControlFLP
 
 	// Smooth over subframes.
 	for k := 0; k < psEnc.sCmn.nbSubfr; k++ {
-		psShapeSt.harmShapeGainSmth += float32(subfrSmthCoef * (harmShapeGain - psShapeSt.harmShapeGainSmth))
+		psShapeSt.harmShapeGainSmth += float32(
+			subfrSmthCoef * (harmShapeGain - psShapeSt.harmShapeGainSmth),
+		)
 		psEncCtrl.harmShapeGain[k] = psShapeSt.harmShapeGainSmth
 		psShapeSt.tiltSmth += float32(subfrSmthCoef * (tilt - psShapeSt.tiltSmth))
 		psEncCtrl.tilt[k] = psShapeSt.tiltSmth

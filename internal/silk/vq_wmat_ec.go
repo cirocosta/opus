@@ -11,7 +11,8 @@ var vq1001Q15 = fixConst(1.001, 15)
 // the best residual energy, the best total bitrate and the sum of
 // absolute LTP coefficients.
 func vqWMatEC(xxQ17 []int32, xXQ17 []int32, cbQ7 [][ltpOrder]int8, cbGainQ7 []uint8, clQ5 []uint8,
-	subfrLen int, maxGainQ7 int32, l int) (ind int8, resNrgQ15, rateDistQ8 int32, gainQ7 int) {
+	subfrLen int, maxGainQ7 int32, l int,
+) (ind int8, resNrgQ15, rateDistQ8 int32, gainQ7 int) {
 	var negxXQ24 [5]int32
 
 	// Negate and convert to new Q domain.

@@ -18,13 +18,22 @@ func (psEnc *encoderStateFLP) processGainsFLP(psEncCtrl *encoderControlFLP, cond
 	}
 
 	// Limit the quantized signal.
-	invMaxSqrVal := float32(math.Pow(2.0, float64(float32(0.33*(21.0-float32(float32(psEnc.sCmn.snrDBQ7)*(1/128.0)))))) /
-		float64(psEnc.sCmn.subfrLength))
+	invMaxSqrVal := float32(
+		math.Pow(
+			2.0,
+			float64(float32(0.33*(21.0-float32(float32(psEnc.sCmn.snrDBQ7)*(1/128.0))))),
+		) /
+			float64(
+				psEnc.sCmn.subfrLength,
+			),
+	)
 
 	for k := 0; k < psEnc.sCmn.nbSubfr; k++ {
 		// Soft limit on ratio residual energy and squared gains.
 		gain := psEncCtrl.gains[k]
-		gain = float32(math.Sqrt(float64(float32(gain*gain) + float32(psEncCtrl.resNrg[k]*invMaxSqrVal))))
+		gain = float32(
+			math.Sqrt(float64(float32(gain*gain) + float32(psEncCtrl.resNrg[k]*invMaxSqrVal))),
+		)
 		psEncCtrl.gains[k] = minFloat(gain, 32767.0)
 	}
 
@@ -58,7 +67,9 @@ func (psEnc *encoderStateFLP) processGainsFLP(psEncCtrl *encoderControlFLP, cond
 	}
 
 	// Quantizer boundary adjustment.
-	quantOffset := float32(quantizationOffsetsQ10[psEnc.sCmn.indices.signalType>>1][psEnc.sCmn.indices.quantOffsetType]) / 1024.0
+	quantOffset := float32(
+		quantizationOffsetsQ10[psEnc.sCmn.indices.signalType>>1][psEnc.sCmn.indices.quantOffsetType],
+	) / 1024.0
 	psEncCtrl.lambda = lambdaOffset +
 		float32(lambdaDelayedDecisions*float32(psEnc.sCmn.nStatesDelayedDecision)) +
 		float32(float32(lambdaSpeechAct*float32(psEnc.sCmn.speechActivityQ8))*(1.0/256.0)) +

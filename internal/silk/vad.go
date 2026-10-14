@@ -35,6 +35,9 @@ var tiltWeights = [vadNBands]int32{30000, 6000, -12000, -12000}
 
 // vadGetSAQ8 is silk_VAD_GetSA_Q8 (silk_VAD_GetSA_Q8_c): get the speech
 // activity level in Q8. pIn is the PCM input.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psEncC *encoderState) vadGetSAQ8(pIn []int16) int {
 	var (
 		x                 [maxFrameLength + maxFrameLength/4]int16

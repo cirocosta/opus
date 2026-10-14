@@ -2,15 +2,6 @@
 
 package silk
 
-// clz64 is silk_CLZ64.
-func clz64(in int64) int32 {
-	inUpper := int32(in >> 32)
-	if inUpper == 0 {
-		return 32 + clz32(int32(in))
-	}
-	return clz32(inUpper)
-}
-
 // clzFrac is silk_CLZ_FRAC: the number of leading zeros and the 7 bits
 // right after the leading one.
 func clzFrac(in int32) (lz, fracQ7 int32) {

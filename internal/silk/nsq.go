@@ -172,6 +172,9 @@ func (psEncC *encoderState) nsq(
 }
 
 // noiseShapeQuantizer is silk_noise_shape_quantizer.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (nsq *nsqState) noiseShapeQuantizer(
 	signalType int,
 	xScQ10 []int32,
@@ -348,6 +351,9 @@ func (nsq *nsqState) noiseShapeQuantizer(
 }
 
 // nsqScaleStates is silk_nsq_scale_states.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psEncC *encoderState) nsqScaleStates(
 	nsq *nsqState,
 	x16 []int16,

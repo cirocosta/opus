@@ -4,7 +4,13 @@ package silk
 
 // nlsfResidualDequant is silk_NLSF_residual_dequant: predictive
 // dequantizer for NLSF residuals.
-func nlsfResidualDequant(xQ10 []int16, indices []int8, predCoefQ8 []uint8, quantStepSizeQ16 int32, order int) {
+func nlsfResidualDequant(
+	xQ10 []int16,
+	indices []int8,
+	predCoefQ8 []uint8,
+	quantStepSizeQ16 int32,
+	order int,
+) {
 	outQ10 := int32(0)
 	for i := order - 1; i >= 0; i-- {
 		predQ10 := smulbb(outQ10, int32(int16(predCoefQ8[i]))) >> 8
@@ -33,13 +39,23 @@ func nlsfDecode(pNLSFQ15 []int16, nlsfIndices []int8, psNLSFCB *nlsfCBStruct) {
 	nlsfUnpack(ecIx[:], predQ8[:], psNLSFCB, int(nlsfIndices[0]))
 
 	// Predictive residual dequantizer.
-	nlsfResidualDequant(resQ10[:], nlsfIndices[1:], predQ8[:], int32(psNLSFCB.quantStepSizeQ16), order)
+	nlsfResidualDequant(
+		resQ10[:],
+		nlsfIndices[1:],
+		predQ8[:],
+		int32(psNLSFCB.quantStepSizeQ16),
+		order,
+	)
 
 	// Apply inverse square-rooted weights to first stage and add to output.
 	pCBElement := psNLSFCB.cb1NLSFQ8[int(nlsfIndices[0])*order:]
 	pCBWghtQ9 := psNLSFCB.cb1WghtQ9[int(nlsfIndices[0])*order:]
 	for i := 0; i < order; i++ {
-		nlsfQ15Tmp := addLshift32(div32_16(lshift(int32(resQ10[i]), 14), int32(pCBWghtQ9[i])), int32(int16(pCBElement[i])), 7)
+		nlsfQ15Tmp := addLshift32(
+			div32_16(lshift(int32(resQ10[i]), 14), int32(pCBWghtQ9[i])),
+			int32(int16(pCBElement[i])),
+			7,
+		)
 		pNLSFQ15[i] = int16(limit32(nlsfQ15Tmp, 0, 32767))
 	}
 

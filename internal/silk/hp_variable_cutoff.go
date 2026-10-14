@@ -4,11 +4,25 @@ package silk
 
 // Constants of silk_HP_variable_cutoff, as the C code computes them.
 var (
-	hpMinCutoffLogQ7      = lin2log(variableHPMinCutoffHz<<16) - (16 << 7) // silk_lin2log( SILK_FIX_CONST( VARIABLE_HP_MIN_CUTOFF_HZ, 16 ) ) - ( 16 << 7 )
-	hpMaxDeltaFreqQ7      = fixConstF32(variableHPMaxDeltaFreq, 7)         // SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 )
-	hpSmthCoef1Q16        = fixConstF32(variableHPSmthCoef1, 16)           // SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 )
-	hpSmth1MinQ15         = lshift(lin2log(variableHPMinCutoffHz), 8)      // silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 )
-	hpSmth1MaxQ15         = lshift(lin2log(variableHPMaxCutoffHz), 8)      // silk_LSHIFT( silk_lin2log( VARIABLE_HP_MAX_CUTOFF_HZ ), 8 )
+	hpMinCutoffLogQ7 = lin2log(
+		variableHPMinCutoffHz<<16,
+	) - (16 << 7) // silk_lin2log( SILK_FIX_CONST( VARIABLE_HP_MIN_CUTOFF_HZ, 16 ) ) - ( 16 << 7 )
+	hpMaxDeltaFreqQ7 = fixConstF32(
+		variableHPMaxDeltaFreq,
+		7,
+	) // SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 )
+	hpSmthCoef1Q16 = fixConstF32(
+		variableHPSmthCoef1,
+		16,
+	) // SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 )
+	hpSmth1MinQ15 = lshift(
+		lin2log(variableHPMinCutoffHz),
+		8,
+	) // silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 )
+	hpSmth1MaxQ15 = lshift(
+		lin2log(variableHPMaxCutoffHz),
+		8,
+	) // silk_LSHIFT( silk_lin2log( VARIABLE_HP_MAX_CUTOFF_HZ ), 8 )
 	variableHPSmthInitQ15 = lshift(lin2log(variableHPMinCutoffHz<<16)-(16<<7), 8)
 )
 
@@ -21,7 +35,10 @@ func hpVariableCutoff(stateFxx *[encoderNumChannels]encoderStateFLP) {
 	// range.
 	if psEncC1.prevSignalType == typeVoiced {
 		// Difference, in log domain.
-		pitchFreqHzQ16 := div32_16(lshift(mul(int32(psEncC1.fsKHz), 1000), 16), int32(psEncC1.prevLag))
+		pitchFreqHzQ16 := div32_16(
+			lshift(mul(int32(psEncC1.fsKHz), 1000), 16),
+			int32(psEncC1.prevLag),
+		)
 		pitchFreqLogQ7 := lin2log(pitchFreqHzQ16) - (16 << 7)
 
 		// Adjustment based on quality.
@@ -45,6 +62,10 @@ func hpVariableCutoff(stateFxx *[encoderNumChannels]encoderStateFLP) {
 			smulbb(int32(psEncC1.speechActivityQ8), deltaFreqQ7), hpSmthCoef1Q16)
 
 		// Limit frequency range.
-		psEncC1.variableHPSmth1Q15 = limit32(psEncC1.variableHPSmth1Q15, hpSmth1MinQ15, hpSmth1MaxQ15)
+		psEncC1.variableHPSmth1Q15 = limit32(
+			psEncC1.variableHPSmth1Q15,
+			hpSmth1MinQ15,
+			hpSmth1MaxQ15,
+		)
 	}
 }

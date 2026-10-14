@@ -6,7 +6,15 @@ import "github.com/cirocosta/opus/internal/entcode"
 
 // encodeIndices is silk_encode_indices: encode side-information
 // parameters to payload.
-func (psEncC *encoderState) encodeIndices(psRangeEnc *entcode.Encoder, frameIndex int, encodeLBRR bool, condCoding int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func (psEncC *encoderState) encodeIndices(
+	psRangeEnc *entcode.Encoder,
+	frameIndex int,
+	encodeLBRR bool,
+	condCoding int,
+) {
 	var (
 		ecIx   [maxLPCOrder]int16
 		predQ8 [maxLPCOrder]uint8
@@ -44,17 +52,33 @@ func (psEncC *encoderState) encodeIndices(psRangeEnc *entcode.Encoder, frameInde
 
 	// Encode NLSFs.
 	cb := psEncC.psNLSFCB
-	psRangeEnc.EncIcdf(int(psIndices.nlsfIndices[0]), cb.cb1ICDF[int(psIndices.signalType>>1)*int(cb.nVectors):], 8)
+	psRangeEnc.EncIcdf(
+		int(psIndices.nlsfIndices[0]),
+		cb.cb1ICDF[int(psIndices.signalType>>1)*int(cb.nVectors):],
+		8,
+	)
 	nlsfUnpack(ecIx[:], predQ8[:], cb, int(psIndices.nlsfIndices[0]))
 	for i := 0; i < int(cb.order); i++ {
 		if psIndices.nlsfIndices[i+1] >= nlsfQuantMaxAmplitude {
 			psRangeEnc.EncIcdf(2*nlsfQuantMaxAmplitude, cb.ecICDF[ecIx[i]:], 8)
-			psRangeEnc.EncIcdf(int(psIndices.nlsfIndices[i+1])-nlsfQuantMaxAmplitude, nlsfEXTICDF[:], 8)
+			psRangeEnc.EncIcdf(
+				int(psIndices.nlsfIndices[i+1])-nlsfQuantMaxAmplitude,
+				nlsfEXTICDF[:],
+				8,
+			)
 		} else if psIndices.nlsfIndices[i+1] <= -nlsfQuantMaxAmplitude {
 			psRangeEnc.EncIcdf(0, cb.ecICDF[ecIx[i]:], 8)
-			psRangeEnc.EncIcdf(-int(psIndices.nlsfIndices[i+1])-nlsfQuantMaxAmplitude, nlsfEXTICDF[:], 8)
+			psRangeEnc.EncIcdf(
+				-int(psIndices.nlsfIndices[i+1])-nlsfQuantMaxAmplitude,
+				nlsfEXTICDF[:],
+				8,
+			)
 		} else {
-			psRangeEnc.EncIcdf(int(psIndices.nlsfIndices[i+1])+nlsfQuantMaxAmplitude, cb.ecICDF[ecIx[i]:], 8)
+			psRangeEnc.EncIcdf(
+				int(psIndices.nlsfIndices[i+1])+nlsfQuantMaxAmplitude,
+				cb.ecICDF[ecIx[i]:],
+				8,
+			)
 		}
 	}
 
@@ -81,7 +105,12 @@ func (psEncC *encoderState) encodeIndices(psRangeEnc *entcode.Encoder, frameInde
 		if encodeAbsoluteLagIndex {
 			// Absolute encoding.
 			pitchHighBits := div32_16(int32(psIndices.lagIndex), int32(psEncC.fsKHz>>1))
-			pitchLowBits := int32(psIndices.lagIndex) - smulbb(pitchHighBits, int32(psEncC.fsKHz>>1))
+			pitchLowBits := int32(
+				psIndices.lagIndex,
+			) - smulbb(
+				pitchHighBits,
+				int32(psEncC.fsKHz>>1),
+			)
 			psRangeEnc.EncIcdf(int(pitchHighBits), pitchLagICDF[:], 8)
 			psRangeEnc.EncIcdf(int(pitchLowBits), psEncC.pitchLagLowBitsICDF, 8)
 		}

@@ -4,6 +4,9 @@ package silk
 
 // decodePitch is silk_decode_pitch: pitch lags from the lag index and
 // contour index.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func decodePitch(lagIndex int16, contourIndex int8, pitchLags []int, fsKHz, nbSubfr int) {
 	// lagCB returns matrix_ptr( Lag_CB_ptr, k, contourIndex, cbk_size ).
 	var lagCB func(k int) int8

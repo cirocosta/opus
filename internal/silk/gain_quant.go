@@ -11,7 +11,16 @@ const (
 // gainsQuant is silk_gains_quant: gain scalar quantization with
 // hysteresis, uniform on log scale. This encoder function is ported with
 // the file but is not exercised by the decoder tests.
-func gainsQuant(ind *[maxNbSubfr]int8, gainQ16 *[maxNbSubfr]int32, prevInd *int8, conditional bool, nbSubfr int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func gainsQuant(
+	ind *[maxNbSubfr]int8,
+	gainQ16 *[maxNbSubfr]int32,
+	prevInd *int8,
+	conditional bool,
+	nbSubfr int,
+) {
 	for k := 0; k < nbSubfr; k++ {
 		// Convert to log scale, scale, floor().
 		ind[k] = int8(smulwb(gainQuantScaleQ16, lin2log(gainQ16[k])-gainQuantOffset))
@@ -35,7 +44,9 @@ func gainsQuant(ind *[maxNbSubfr]int8, gainQ16 *[maxNbSubfr]int32, prevInd *int8
 			// so that the max gain level can be reached.
 			doubleStepSizeThreshold := 2*maxDeltaGainQuant - nLevelsQGain + int(*prevInd)
 			if int(ind[k]) > doubleStepSizeThreshold {
-				ind[k] = int8(doubleStepSizeThreshold + ((int(ind[k]) - doubleStepSizeThreshold + 1) >> 1))
+				ind[k] = int8(
+					doubleStepSizeThreshold + ((int(ind[k]) - doubleStepSizeThreshold + 1) >> 1),
+				)
 			}
 
 			ind[k] = int8(limitInt(int(ind[k]), minDeltaGainQuant, maxDeltaGainQuant))
@@ -53,13 +64,21 @@ func gainsQuant(ind *[maxNbSubfr]int8, gainQ16 *[maxNbSubfr]int32, prevInd *int8
 		}
 
 		// Scale and convert to linear scale.
-		gainQ16[k] = log2lin(min32(smulwb(gainQuantInvScaleQ16, int32(*prevInd))+gainQuantOffset, 3967)) // 3967 = 31 in Q7
+		gainQ16[k] = log2lin(
+			min32(smulwb(gainQuantInvScaleQ16, int32(*prevInd))+gainQuantOffset, 3967),
+		) // 3967 = 31 in Q7
 	}
 }
 
 // gainsDequant is silk_gains_dequant: gains scalar dequantization,
 // uniform on log scale.
-func gainsDequant(gainQ16 *[maxNbSubfr]int32, ind *[maxNbSubfr]int8, prevInd *int8, conditional bool, nbSubfr int) {
+func gainsDequant(
+	gainQ16 *[maxNbSubfr]int32,
+	ind *[maxNbSubfr]int8,
+	prevInd *int8,
+	conditional bool,
+	nbSubfr int,
+) {
 	for k := 0; k < nbSubfr; k++ {
 		if k == 0 && !conditional {
 			// Gain index is not allowed to go down more than 16 steps
@@ -80,7 +99,9 @@ func gainsDequant(gainQ16 *[maxNbSubfr]int32, ind *[maxNbSubfr]int8, prevInd *in
 		*prevInd = int8(limitInt(int(*prevInd), 0, nLevelsQGain-1))
 
 		// Scale and convert to linear scale.
-		gainQ16[k] = log2lin(min32(smulwb(gainQuantInvScaleQ16, int32(*prevInd))+gainQuantOffset, 3967)) // 3967 = 31 in Q7
+		gainQ16[k] = log2lin(
+			min32(smulwb(gainQuantInvScaleQ16, int32(*prevInd))+gainQuantOffset, 3967),
+		) // 3967 = 31 in Q7
 	}
 }
 

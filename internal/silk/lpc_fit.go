@@ -4,6 +4,9 @@ package silk
 
 // lpcFit is silk_LPC_fit: convert int32 coefficients to int16 coefs and
 // make sure there's no wrap-around.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func lpcFit(aQOUT []int16, aQIN []int32, qOUT, qIN, d int) {
 	var i int
 	idx := 0
@@ -24,8 +27,14 @@ func lpcFit(aQOUT []int16, aQIN []int32, qOUT, qIN, d int) {
 
 		if maxabs > int16MAX {
 			// Reduce magnitude of prediction coefficients.
-			maxabs = min32(maxabs, 163838)                                                   // ( silk_int32_MAX >> 14 ) + silk_int16_MAX = 163838
-			chirpQ16 := 65470 - div32(lshift(maxabs-int16MAX, 14), (maxabs*int32(idx+1))>>2) // SILK_FIX_CONST( 0.999, 16 ) = 65470
+			maxabs = min32(
+				maxabs,
+				163838,
+			) // ( silk_int32_MAX >> 14 ) + silk_int16_MAX = 163838
+			chirpQ16 := 65470 - div32(
+				lshift(maxabs-int16MAX, 14),
+				(maxabs*int32(idx+1))>>2,
+			) // SILK_FIX_CONST( 0.999, 16 ) = 65470
 			bwexpander32(aQIN, d, chirpQ16)
 		} else {
 			break

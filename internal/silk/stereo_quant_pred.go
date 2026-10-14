@@ -7,6 +7,9 @@ var stereoQuantStepQ16 = fixConst(0.5/stereoQuantSubSteps, 16)
 
 // stereoQuantPred is silk_stereo_quant_pred: quantize mid/side
 // predictors.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func stereoQuantPred(predQ13 *[2]int32, ix *[2][3]int8) {
 	quantPredQ13 := int32(0)
 

@@ -57,8 +57,19 @@ type pitchStage3Array [peMaxNbSubfr][peNbCbksStage3Max][peNbStage3Lags]float32
 // pitchAnalysisCoreFLP is silk_pitch_analysis_core_FLP: core pitch
 // analysis function. frame is the signal of length PE_FRAME_LENGTH_MS *
 // Fs_kHz. It returns the voicing estimate: 0 voiced, 1 unvoiced.
-func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *int16, contourIndex *int8,
-	ltpCorr *float32, prevLag int, searchThres1, searchThres2 float32, fsKHz, complexity, nbSubfr int) int {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func pitchAnalysisCoreFLP(
+	frame []float32,
+	pitchOut *[maxNbSubfr]int,
+	lagIndex *int16,
+	contourIndex *int8,
+	ltpCorr *float32,
+	prevLag int,
+	searchThres1, searchThres2 float32,
+	fsKHz, complexity, nbSubfr int,
+) int {
 	var (
 		frame8kHz    [peMaxFrameLengthMs * 8]float32
 		frame4kHz    [peMaxFrameLengthMs * 4]float32
@@ -90,21 +101,22 @@ func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *
 	maxLag8kHz := peMaxLagMs*8 - 1
 
 	// Resample from input sampled at Fs_kHz to 8 kHz.
-	if fsKHz == 16 {
+	switch fsKHz {
+	case 16:
 		// Resample to 16 -> 8 khz.
 		var frame16FIX [16 * peMaxFrameLengthMs]int16
 		float2shortArray(frame16FIX[:], frame, frameLength)
 		filtState[0], filtState[1] = 0, 0
 		resamplerDown2((*[2]int32)(filtState[:2]), frame8FIX[:], frame16FIX[:], frameLength)
 		short2floatArray(frame8kHz[:], frame8FIX[:], frameLength8kHz)
-	} else if fsKHz == 12 {
+	case 12:
 		// Resample to 12 -> 8 khz.
 		var frame12FIX [12 * peMaxFrameLengthMs]int16
 		float2shortArray(frame12FIX[:], frame, frameLength)
 		filtState = [6]int32{}
 		resamplerDown2_3(&filtState, frame8FIX[:], frame12FIX[:], frameLength)
 		short2floatArray(frame8kHz[:], frame8FIX[:], frameLength8kHz)
-	} else {
+	default:
 		float2shortArray(frame8FIX[:], frame, frameLength8kHz)
 	}
 
@@ -130,8 +142,13 @@ func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *
 	for k := 0; k < nbSubfr>>1; k++ {
 		basisPtr := targetPtr - minLag4kHz
 
-		dsp.CeltPitchXcorr(frame4kHz[targetPtr:], frame4kHz[targetPtr-maxLag4kHz:], xcorr[:], sfLength8kHz,
-			maxLag4kHz-minLag4kHz+1)
+		dsp.CeltPitchXcorr(
+			frame4kHz[targetPtr:],
+			frame4kHz[targetPtr-maxLag4kHz:],
+			xcorr[:],
+			sfLength8kHz,
+			maxLag4kHz-minLag4kHz+1,
+		)
 
 		// Calculate first vector products before loop.
 		crossCorr := float64(xcorr[maxLag4kHz-minLag4kHz])
@@ -150,7 +167,13 @@ func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *
 			// Add contribution of new sample and remove contribution from
 			// oldest sample.
 			normalizer += float64(float64(frame4kHz[basisPtr])*float64(frame4kHz[basisPtr])) -
-				float64(float64(frame4kHz[basisPtr+sfLength8kHz])*float64(frame4kHz[basisPtr+sfLength8kHz]))
+				float64(
+					float64(
+						frame4kHz[basisPtr+sfLength8kHz],
+					)*float64(
+						frame4kHz[basisPtr+sfLength8kHz],
+					),
+				)
 			c[0][d] += float32(float64(2*crossCorr) / normalizer)
 		}
 		// Update target pointer.
@@ -264,9 +287,10 @@ func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *
 
 	var prevLagLog2 float32
 	if prevLag > 0 {
-		if fsKHz == 12 {
+		switch fsKHz {
+		case 12:
 			prevLag = (prevLag << 1) / 3
-		} else if fsKHz == 16 {
+		case 16:
 			prevLag = prevLag >> 1
 		}
 		prevLagLog2 = silkLog2(float64(float32(prevLag)))
@@ -315,12 +339,18 @@ func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *
 		if prevLag > 0 {
 			deltaLagLog2Sqr := lagLog2 - prevLagLog2
 			deltaLagLog2Sqr = float32(deltaLagLog2Sqr * deltaLagLog2Sqr)
-			ccmaxNewB -= float32(float32(float32(float32(pePrevlagBias*float32(nbSubfr))*(*ltpCorr))*deltaLagLog2Sqr) /
-				(deltaLagLog2Sqr + 0.5))
+			ccmaxNewB -= float32(
+				float32(
+					float32(float32(pePrevlagBias*float32(nbSubfr))*(*ltpCorr))*deltaLagLog2Sqr,
+				) /
+					(deltaLagLog2Sqr + 0.5),
+			)
 		}
 
 		if ccmaxNewB > ccmaxB && // Find maximum biased correlation
-			ccmaxNew > float32(float32(nbSubfr)*searchThres2) { // Correlation needs to be high enough to be voiced
+			ccmaxNew > float32(
+				float32(nbSubfr)*searchThres2,
+			) { // Correlation needs to be high enough to be voiced
 			ccmaxB = ccmaxNewB
 			ccmax = ccmaxNew
 			lag = d
@@ -428,7 +458,12 @@ func pitchAnalysisCoreFLP(frame []float32, pitchOut *[maxNbSubfr]int, lagIndex *
 //
 // In total 48 correlations. The direct implementation computed in worst
 // case 4*12*5 = 240 correlations, but more likely around 120.
-func pAnaCalcCorrSt3(crossCorrSt3 *pitchStage3Array, frame []float32, startLag, sfLength, nbSubfr int, t pitchLagTables) {
+func pAnaCalcCorrSt3(
+	crossCorrSt3 *pitchStage3Array,
+	frame []float32,
+	startLag, sfLength, nbSubfr int,
+	t pitchLagTables,
+) {
 	var (
 		scratchMem [pitchScratchSize]float32
 		xcorr      [pitchScratchSize]float32
@@ -442,7 +477,13 @@ func pAnaCalcCorrSt3(crossCorrSt3 *pitchStage3Array, frame []float32, startLag, 
 		// Calculate the correlations for each subframe.
 		lagLow := t.lagRange(k, 0)
 		lagHigh := t.lagRange(k, 1)
-		dsp.CeltPitchXcorr(frame[targetPtr:], frame[targetPtr-startLag-lagHigh:], xcorr[:], sfLength, lagHigh-lagLow+1)
+		dsp.CeltPitchXcorr(
+			frame[targetPtr:],
+			frame[targetPtr-startLag-lagHigh:],
+			xcorr[:],
+			sfLength,
+			lagHigh-lagLow+1,
+		)
 		for j := lagLow; j <= lagHigh; j++ {
 			scratchMem[lagCounter] = xcorr[lagHigh-j]
 			lagCounter++
@@ -464,7 +505,12 @@ func pAnaCalcCorrSt3(crossCorrSt3 *pitchStage3Array, frame []float32, startLag, 
 // pAnaCalcEnergySt3 is silk_P_Ana_calc_energy_st3: calculate the
 // energies for first two subframes. The energies are calculated
 // recursively.
-func pAnaCalcEnergySt3(energiesSt3 *pitchStage3Array, frame []float32, startLag, sfLength, nbSubfr int, t pitchLagTables) {
+func pAnaCalcEnergySt3(
+	energiesSt3 *pitchStage3Array,
+	frame []float32,
+	startLag, sfLength, nbSubfr int,
+	t pitchLagTables,
+) {
 	var scratchMem [pitchScratchSize]float32
 	nbCbkSearch := t.nbCbkSearchStage3()
 
@@ -481,7 +527,9 @@ func pAnaCalcEnergySt3(energiesSt3 *pitchStage3Array, frame []float32, startLag,
 		lagDiff := t.lagRange(k, 1) - t.lagRange(k, 0) + 1
 		for i := 1; i < lagDiff; i++ {
 			// Remove part outside new window.
-			energy -= float64(float64(frame[basisPtr+sfLength-i]) * float64(frame[basisPtr+sfLength-i]))
+			energy -= float64(
+				float64(frame[basisPtr+sfLength-i]) * float64(frame[basisPtr+sfLength-i]),
+			)
 
 			// Add part that comes into window.
 			energy += float64(float64(frame[basisPtr-i]) * float64(frame[basisPtr-i]))

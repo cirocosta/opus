@@ -3,7 +3,10 @@
 package silk
 
 // controlEncoder is silk_control_encoder: control the encoder.
-func (psEnc *encoderStateFLP) controlEncoder(encControl *EncControl, allowBWSwitch, channelNb, forceFsKHz int) int {
+func (psEnc *encoderStateFLP) controlEncoder(
+	encControl *EncControl,
+	allowBWSwitch, channelNb, forceFsKHz int,
+) int {
 	ret := 0
 
 	psEnc.sCmn.useDTX = encControl.UseDTX
@@ -63,7 +66,12 @@ func (psEnc *encoderStateFLP) setupResamplers(fsKHz int) int {
 		if psEnc.sCmn.fsKHz == 0 {
 			// Initialize the resampler for enc_API.c preparing resampling
 			// from API_fs_Hz to fs_kHz.
-			ret += resamplerInit(&psEnc.sCmn.resamplerState, psEnc.sCmn.apiFsHz, int32(fsKHz*1000), true)
+			ret += resamplerInit(
+				&psEnc.sCmn.resamplerState,
+				psEnc.sCmn.apiFsHz,
+				int32(fsKHz*1000),
+				true,
+			)
 		} else {
 			sc := &psEnc.scratch
 			xBufFIX := sc.xBufFIX[:]
@@ -77,7 +85,12 @@ func (psEnc *encoderStateFLP) setupResamplers(fsKHz int) int {
 			// Initialize resampler for temporary resampling of x_buf data
 			// to API_fs_Hz.
 			tempResamplerState := &sc.tempResampler
-			ret += resamplerInit(tempResamplerState, smulbb(int32(psEnc.sCmn.fsKHz), 1000), psEnc.sCmn.apiFsHz, false)
+			ret += resamplerInit(
+				tempResamplerState,
+				smulbb(int32(psEnc.sCmn.fsKHz), 1000),
+				psEnc.sCmn.apiFsHz,
+				false,
+			)
 
 			// Calculate number of samples to temporarily upsample.
 			apiBufSamples := int(bufLengthMs * div32_16(psEnc.sCmn.apiFsHz, 1000))
@@ -88,7 +101,12 @@ func (psEnc *encoderStateFLP) setupResamplers(fsKHz int) int {
 
 			// Initialize the resampler for enc_API.c preparing resampling
 			// from API_fs_Hz to fs_kHz.
-			ret += resamplerInit(&psEnc.sCmn.resamplerState, psEnc.sCmn.apiFsHz, smulbb(int32(fsKHz), 1000), true)
+			ret += resamplerInit(
+				&psEnc.sCmn.resamplerState,
+				psEnc.sCmn.apiFsHz,
+				smulbb(int32(fsKHz), 1000),
+				true,
+			)
 
 			// Correct resampler state by resampling buffered data from
 			// API_fs_Hz to fs_kHz.
@@ -104,6 +122,9 @@ func (psEnc *encoderStateFLP) setupResamplers(fsKHz int) int {
 }
 
 // setupFs is silk_setup_fs.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (psEnc *encoderStateFLP) setupFs(fsKHz, packetSizeMs int) int {
 	ret := NoError
 
@@ -182,7 +203,9 @@ func (psEnc *encoderStateFLP) setupFs(fsKHz, packetSizeMs int) int {
 			psEnc.sCmn.psNLSFCB = &nlsfCBWB
 		}
 		psEnc.sCmn.subfrLength = subFrameLengthMs * fsKHz
-		psEnc.sCmn.frameLength = int(smulbb(int32(psEnc.sCmn.subfrLength), int32(psEnc.sCmn.nbSubfr)))
+		psEnc.sCmn.frameLength = int(
+			smulbb(int32(psEnc.sCmn.subfrLength), int32(psEnc.sCmn.nbSubfr)),
+		)
 		psEnc.sCmn.ltpMemLength = int(smulbb(ltpMemLengthMs, int32(fsKHz)))
 		psEnc.sCmn.laPitch = int(smulbb(laPitchMs, int32(fsKHz)))
 		psEnc.sCmn.maxPitchLag = int(smulbb(18, int32(fsKHz)))
@@ -191,11 +214,12 @@ func (psEnc *encoderStateFLP) setupFs(fsKHz, packetSizeMs int) int {
 		} else {
 			psEnc.sCmn.pitchLPCWinLength = int(smulbb(findPitchLPCWinMs2SF, int32(fsKHz)))
 		}
-		if psEnc.sCmn.fsKHz == 16 {
+		switch psEnc.sCmn.fsKHz {
+		case 16:
 			psEnc.sCmn.pitchLagLowBitsICDF = uniform8ICDF[:]
-		} else if psEnc.sCmn.fsKHz == 12 {
+		case 12:
 			psEnc.sCmn.pitchLagLowBitsICDF = uniform6ICDF[:]
-		} else {
+		default:
 			psEnc.sCmn.pitchLagLowBitsICDF = uniform4ICDF[:]
 		}
 	}
@@ -308,7 +332,10 @@ func (psEncC *encoderState) setupLBRR(encControl *EncControl) int {
 			// at a higher bitrate.
 			psEncC.lbrrGainIncreases = 7
 		} else {
-			psEncC.lbrrGainIncreases = maxInt(7-int(smulwb(int32(psEncC.packetLossPerc), lbrrGainIncreaseCoefQ16)), 3)
+			psEncC.lbrrGainIncreases = maxInt(
+				7-int(smulwb(int32(psEncC.packetLossPerc), lbrrGainIncreaseCoefQ16)),
+				3,
+			)
 		}
 	}
 

@@ -144,7 +144,10 @@ func (e *Encoder) queryEncoder(encStatus *EncControl) int {
 
 // speechActThrForSwitchSlopeQ24 is SILK_FIX_CONST( ( 1 -
 // SPEECH_ACTIVITY_DTX_THRES ) / MAX_BANDWIDTH_SWITCH_DELAY_MS, 16 + 8 ).
-var speechActThrForSwitchSlopeQ24 = fixConstF32((1-speechActivityDTXThres)/maxBandwidthSwitchDelayMs, 16+8)
+var speechActThrForSwitchSlopeQ24 = fixConstF32(
+	(1-speechActivityDTXThres)/maxBandwidthSwitchDelayMs,
+	16+8,
+)
 
 // Encode is silk_Encode: encode frames with SILK. samplesIn holds
 // nSamplesIn samples per API channel, interleaved, as opus_res (float,
@@ -154,8 +157,18 @@ var speechActThrForSwitchSlopeQ24 = fixConstF32((1-speechActivityDTXThres)/maxBa
 // encControl.PayloadSizeMs is set to. activity is the decision of the
 // Opus voice activity detector. The arch argument of the C function is
 // not ported.
-func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn int, psRangeEnc *entcode.Encoder,
-	nBytesOut *int32, prefillFlag int, activity int) int {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func (e *Encoder) Encode(
+	encControl *EncControl,
+	samplesIn []float32,
+	nSamplesIn int,
+	psRangeEnc *entcode.Encoder,
+	nBytesOut *int32,
+	prefillFlag int,
+	activity int,
+) int {
 	var (
 		tmpPayloadSizeMs, tmpComplexity int
 		ret                             int
@@ -237,7 +250,8 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 		}
 	} else {
 		// Only accept input lengths that are a multiple of 10 ms.
-		if int32(nBlocksOf10ms)*encControl.APISampleRate != int32(100*nSamplesIn) || nSamplesIn < 0 {
+		if int32(nBlocksOf10ms)*encControl.APISampleRate != int32(100*nSamplesIn) ||
+			nSamplesIn < 0 {
 			return EncInputInvalidNoOfSamples
 		}
 		// Make sure no more than one packet can be produced.
@@ -252,7 +266,12 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 		if n == 1 {
 			forceFsKHz = e.stateFxx[0].sCmn.fsKHz
 		}
-		if ret = e.stateFxx[n].controlEncoder(encControl, e.allowBandwidthSwitch, n, forceFsKHz); ret != 0 {
+		if ret = e.stateFxx[n].controlEncoder(
+			encControl,
+			e.allowBandwidthSwitch,
+			n,
+			forceFsKHz,
+		); ret != 0 {
 			return ret
 		}
 		if e.stateFxx[n].sCmn.firstFrameAfterReset != 0 || transition {
@@ -271,7 +290,12 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 		currNBitsUsedLBRR := 0
 		nSamplesToBuffer := e.stateFxx[0].sCmn.frameLength - e.stateFxx[0].sCmn.inputBufIx
 		nSamplesToBuffer = minInt(nSamplesToBuffer, nSamplesToBufferMax)
-		nSamplesFromInput := int(div32_16(int32(nSamplesToBuffer)*e.stateFxx[0].sCmn.apiFsHz, int32(e.stateFxx[0].sCmn.fsKHz*1000)))
+		nSamplesFromInput := int(
+			div32_16(
+				int32(nSamplesToBuffer)*e.stateFxx[0].sCmn.apiFsHz,
+				int32(e.stateFxx[0].sCmn.fsKHz*1000),
+			),
+		)
 		// Resample and write to buffer.
 		if encControl.NChannelsAPI == 2 && encControl.NChannelsInternal == 2 {
 			id := e.stateFxx[0].sCmn.nFramesEncoded
@@ -284,8 +308,12 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 				e.stateFxx[1].sCmn.resamplerState = e.stateFxx[0].sCmn.resamplerState
 			}
 
-			ret += resampler(&e.stateFxx[0].sCmn.resamplerState,
-				e.stateFxx[0].sCmn.inputBuf[e.stateFxx[0].sCmn.inputBufIx+2:], buf, nSamplesFromInput)
+			ret += resampler(
+				&e.stateFxx[0].sCmn.resamplerState,
+				e.stateFxx[0].sCmn.inputBuf[e.stateFxx[0].sCmn.inputBufIx+2:],
+				buf,
+				nSamplesFromInput,
+			)
 			e.stateFxx[0].sCmn.inputBufIx += nSamplesToBuffer
 
 			nSamplesToBuffer = e.stateFxx[1].sCmn.frameLength - e.stateFxx[1].sCmn.inputBufIx
@@ -293,8 +321,12 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 			for n := 0; n < nSamplesFromInput; n++ {
 				buf[n] = dsp.Res2Int16(in[2*n+1])
 			}
-			ret += resampler(&e.stateFxx[1].sCmn.resamplerState,
-				e.stateFxx[1].sCmn.inputBuf[e.stateFxx[1].sCmn.inputBufIx+2:], buf, nSamplesFromInput)
+			ret += resampler(
+				&e.stateFxx[1].sCmn.resamplerState,
+				e.stateFxx[1].sCmn.inputBuf[e.stateFxx[1].sCmn.inputBufIx+2:],
+				buf,
+				nSamplesFromInput,
+			)
 
 			e.stateFxx[1].sCmn.inputBufIx += nSamplesToBuffer
 		} else if encControl.NChannelsAPI == 2 && encControl.NChannelsInternal == 1 {
@@ -303,18 +335,28 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 				sum := int32(dsp.Res2Int16(in[2*n] + in[2*n+1]))
 				buf[n] = int16(rshiftRound(sum, 1))
 			}
-			ret += resampler(&e.stateFxx[0].sCmn.resamplerState,
-				e.stateFxx[0].sCmn.inputBuf[e.stateFxx[0].sCmn.inputBufIx+2:], buf, nSamplesFromInput)
+			ret += resampler(
+				&e.stateFxx[0].sCmn.resamplerState,
+				e.stateFxx[0].sCmn.inputBuf[e.stateFxx[0].sCmn.inputBufIx+2:],
+				buf,
+				nSamplesFromInput,
+			)
 			// On the first mono frame, average the results for the two
 			// resampler states.
 			if e.nPrevChannelsInternal == 2 && e.stateFxx[0].sCmn.nFramesEncoded == 0 {
-				ret += resampler(&e.stateFxx[1].sCmn.resamplerState,
-					e.stateFxx[1].sCmn.inputBuf[e.stateFxx[1].sCmn.inputBufIx+2:], buf, nSamplesFromInput)
+				ret += resampler(
+					&e.stateFxx[1].sCmn.resamplerState,
+					e.stateFxx[1].sCmn.inputBuf[e.stateFxx[1].sCmn.inputBufIx+2:],
+					buf,
+					nSamplesFromInput,
+				)
 				for n := 0; n < e.stateFxx[0].sCmn.frameLength; n++ {
 					i0 := e.stateFxx[0].sCmn.inputBufIx + n + 2
 					i1 := e.stateFxx[1].sCmn.inputBufIx + n + 2
-					e.stateFxx[0].sCmn.inputBuf[i0] = int16((int32(e.stateFxx[0].sCmn.inputBuf[i0]) +
-						int32(e.stateFxx[1].sCmn.inputBuf[i1])) >> 1)
+					e.stateFxx[0].sCmn.inputBuf[i0] = int16(
+						(int32(e.stateFxx[0].sCmn.inputBuf[i0]) +
+							int32(e.stateFxx[1].sCmn.inputBuf[i1])) >> 1,
+					)
 				}
 			}
 			e.stateFxx[0].sCmn.inputBufIx += nSamplesToBuffer
@@ -322,8 +364,12 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 			for n := 0; n < nSamplesFromInput; n++ {
 				buf[n] = dsp.Res2Int16(in[n])
 			}
-			ret += resampler(&e.stateFxx[0].sCmn.resamplerState,
-				e.stateFxx[0].sCmn.inputBuf[e.stateFxx[0].sCmn.inputBufIx+2:], buf, nSamplesFromInput)
+			ret += resampler(
+				&e.stateFxx[0].sCmn.resamplerState,
+				e.stateFxx[0].sCmn.inputBuf[e.stateFxx[0].sCmn.inputBufIx+2:],
+				buf,
+				nSamplesFromInput,
+			)
 			e.stateFxx[0].sCmn.inputBufIx += nSamplesToBuffer
 		}
 
@@ -341,7 +387,9 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 			if e.stateFxx[0].sCmn.nFramesEncoded == 0 && prefillFlag == 0 {
 				// Create space at start of payload for VAD and FEC flags.
 				var iCDF [2]uint8
-				iCDF[0] = uint8(256 - (int(256) >> uint((e.stateFxx[0].sCmn.nFramesPerPacket+1)*int(encControl.NChannelsInternal))))
+				iCDF[0] = uint8(
+					256 - (int(256) >> uint((e.stateFxx[0].sCmn.nFramesPerPacket+1)*int(encControl.NChannelsInternal))),
+				)
 				psRangeEnc.EncIcdf(0, iCDF[:], 8)
 				currNBitsUsedLBRR = psRangeEnc.Tell()
 
@@ -358,7 +406,11 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 						e.stateFxx[n].sCmn.lbrrFlag = 0
 					}
 					if lbrrSymbol != 0 && e.stateFxx[n].sCmn.nFramesPerPacket > 1 {
-						psRangeEnc.EncIcdf(lbrrSymbol-1, lbrrFlagsICDFPtr[e.stateFxx[n].sCmn.nFramesPerPacket-2], 8)
+						psRangeEnc.EncIcdf(
+							lbrrSymbol-1,
+							lbrrFlagsICDFPtr[e.stateFxx[n].sCmn.nFramesPerPacket-2],
+							8,
+						)
 					}
 				}
 
@@ -382,9 +434,13 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 								condCoding = codeConditionally
 							}
 							e.stateFxx[n].sCmn.encodeIndices(psRangeEnc, i, true, condCoding)
-							encodePulses(psRangeEnc, int(e.stateFxx[n].sCmn.indicesLBRR[i].signalType),
+							encodePulses(
+								psRangeEnc,
+								int(e.stateFxx[n].sCmn.indicesLBRR[i].signalType),
 								int(e.stateFxx[n].sCmn.indicesLBRR[i].quantOffsetType),
-								e.stateFxx[n].sCmn.pulsesLBRR[i][:], e.stateFxx[n].sCmn.frameLength)
+								e.stateFxx[n].sCmn.pulsesLBRR[i][:],
+								e.stateFxx[n].sCmn.frameLength,
+							)
 						}
 					}
 				}
@@ -429,7 +485,11 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 			targetRateBps -= div32_16(mul(e.nBitsExceeded, 1000), bitreservoirDecayTimeMs)
 			if prefillFlag == 0 && e.stateFxx[0].sCmn.nFramesEncoded > 0 {
 				// Compare actual vs target bits so far in this packet.
-				bitsBalance := int32(psRangeEnc.Tell()) - e.nBitsUsedLBRR - nBits*int32(e.stateFxx[0].sCmn.nFramesEncoded)
+				bitsBalance := int32(
+					psRangeEnc.Tell(),
+				) - e.nBitsUsedLBRR - nBits*int32(
+					e.stateFxx[0].sCmn.nFramesEncoded,
+				)
 				targetRateBps -= div32_16(mul(bitsBalance, 1000), bitreservoirDecayTimeMs)
 			}
 			// Never exceed input bitrate.
@@ -438,10 +498,20 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 			// Convert Left/Right to Mid/Side.
 			if encControl.NChannelsInternal == 2 {
 				fe := e.stateFxx[0].sCmn.nFramesEncoded
-				stereoLRToMS(&e.sStereo, e.stateFxx[0].sCmn.inputBuf[:], e.stateFxx[1].sCmn.inputBuf[:],
-					&e.sStereo.predIx[fe], &e.sStereo.midOnlyFlags[fe],
-					&msTargetRatesBps, targetRateBps, e.stateFxx[0].sCmn.speechActivityQ8, encControl.ToMono,
-					e.stateFxx[0].sCmn.fsKHz, e.stateFxx[0].sCmn.frameLength, &e.stereoScratch)
+				stereoLRToMS(
+					&e.sStereo,
+					e.stateFxx[0].sCmn.inputBuf[:],
+					e.stateFxx[1].sCmn.inputBuf[:],
+					&e.sStereo.predIx[fe],
+					&e.sStereo.midOnlyFlags[fe],
+					&msTargetRatesBps,
+					targetRateBps,
+					e.stateFxx[0].sCmn.speechActivityQ8,
+					encControl.ToMono,
+					e.stateFxx[0].sCmn.fsKHz,
+					e.stateFxx[0].sCmn.frameLength,
+					&e.stereoScratch,
+				)
 				if e.sStereo.midOnlyFlags[fe] == 0 {
 					// Reset side channel encoder memory for first frame with
 					// side coding.
@@ -483,9 +553,10 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 				if totBlocks == 2 && currBlock == 0 {
 					maxBits = maxBits * 3 / 5
 				} else if totBlocks == 3 {
-					if currBlock == 0 {
+					switch currBlock {
+					case 0:
 						maxBits = maxBits * 2 / 5
-					} else if currBlock == 1 {
+					case 1:
 						maxBits = maxBits * 3 / 4
 					}
 				}
@@ -520,16 +591,25 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 					} else {
 						condCoding = codeConditionally
 					}
-					ret = e.stateFxx[n].encodeFrameFLP(nBytesOut, psRangeEnc, condCoding, maxBits, useCBR)
+					ret = e.stateFxx[n].encodeFrameFLP(
+						nBytesOut,
+						psRangeEnc,
+						condCoding,
+						maxBits,
+						useCBR,
+					)
 				}
 				e.stateFxx[n].sCmn.controlledSinceLastPayload = 0
 				e.stateFxx[n].sCmn.inputBufIx = 0
 				e.stateFxx[n].sCmn.nFramesEncoded++
 			}
-			e.prevDecodeOnlyMiddle = int(e.sStereo.midOnlyFlags[e.stateFxx[0].sCmn.nFramesEncoded-1])
+			e.prevDecodeOnlyMiddle = int(
+				e.sStereo.midOnlyFlags[e.stateFxx[0].sCmn.nFramesEncoded-1],
+			)
 
 			// Insert VAD and FEC flags at beginning of bitstream.
-			if *nBytesOut > 0 && e.stateFxx[0].sCmn.nFramesEncoded == e.stateFxx[0].sCmn.nFramesPerPacket {
+			if *nBytesOut > 0 &&
+				e.stateFxx[0].sCmn.nFramesEncoded == e.stateFxx[0].sCmn.nFramesPerPacket {
 				flags := 0
 				for n := 0; n < int(encControl.NChannelsInternal); n++ {
 					for i := 0; i < e.stateFxx[n].sCmn.nFramesPerPacket; i++ {
@@ -540,16 +620,27 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 					flags |= int(e.stateFxx[n].sCmn.lbrrFlag)
 				}
 				if prefillFlag == 0 {
-					psRangeEnc.PatchInitialBits(uint32(flags), uint32((e.stateFxx[0].sCmn.nFramesPerPacket+1)*int(encControl.NChannelsInternal)))
+					psRangeEnc.PatchInitialBits(
+						uint32(flags),
+						uint32(
+							(e.stateFxx[0].sCmn.nFramesPerPacket+1)*int(
+								encControl.NChannelsInternal,
+							),
+						),
+					)
 				}
 
 				// Return zero bytes if all channels DTXed.
-				if e.stateFxx[0].sCmn.inDTX != 0 && (encControl.NChannelsInternal == 1 || e.stateFxx[1].sCmn.inDTX != 0) {
+				if e.stateFxx[0].sCmn.inDTX != 0 &&
+					(encControl.NChannelsInternal == 1 || e.stateFxx[1].sCmn.inDTX != 0) {
 					*nBytesOut = 0
 				}
 
 				e.nBitsExceeded += *nBytesOut * 8
-				e.nBitsExceeded -= div32_16(mul(encControl.BitRate, int32(encControl.PayloadSizeMs)), 1000)
+				e.nBitsExceeded -= div32_16(
+					mul(encControl.BitRate, int32(encControl.PayloadSizeMs)),
+					1000,
+				)
 				e.nBitsExceeded = limit32(e.nBitsExceeded, 0, 10000)
 
 				// Update flag indicating if bandwidth switching is allowed.
@@ -596,6 +687,8 @@ func (e *Encoder) Encode(encControl *EncControl, samplesIn []float32, nSamplesIn
 	}
 
 	encControl.SignalType = int(e.stateFxx[0].sCmn.indices.signalType)
-	encControl.Offset = int(quantizationOffsetsQ10[e.stateFxx[0].sCmn.indices.signalType>>1][e.stateFxx[0].sCmn.indices.quantOffsetType])
+	encControl.Offset = int(
+		quantizationOffsetsQ10[e.stateFxx[0].sCmn.indices.signalType>>1][e.stateFxx[0].sCmn.indices.quantOffsetType],
+	)
 	return ret
 }

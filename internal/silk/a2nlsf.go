@@ -73,6 +73,9 @@ func a2nlsfInit(aQ16 []int32, p, q []int32, dd int) {
 // (NLSFs) from whitening filter coefficients. If not all roots are
 // found, the a_Q16 coefficients are bandwidth expanded until
 // convergence.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func a2nlsf(nlsf []int16, aQ16 []int32, d int) {
 	var (
 		pPoly [silkMaxOrderLPC/2 + 1]int32

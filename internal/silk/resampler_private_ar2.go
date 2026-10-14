@@ -4,8 +4,8 @@ package silk
 
 // resamplerPrivateAR2 is silk_resampler_private_AR2: second order AR
 // filter with single delay elements. s is the state vector [2].
-func resamplerPrivateAR2(s []int32, outQ8 []int32, in []int16, aQ14 []int16, len int) {
-	for k := 0; k < len; k++ {
+func resamplerPrivateAR2(s []int32, outQ8 []int32, in []int16, aQ14 []int16, length int) {
+	for k := 0; k < length; k++ {
 		out32 := addLshift32(s[0], int32(in[k]), 8)
 		outQ8[k] = out32
 		out32 = lshift(out32, 2)

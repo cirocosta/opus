@@ -7,7 +7,14 @@ import "github.com/cirocosta/opus/internal/entcode"
 // decodePulses is silk_decode_pulses: decode quantization indices of
 // excitation. pulses must hold frameLength rounded up to a multiple of
 // SHELL_CODEC_FRAME_LENGTH samples.
-func decodePulses(psRangeDec *entcode.Decoder, pulses []int16, signalType, quantOffsetType, frameLength int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func decodePulses(
+	psRangeDec *entcode.Decoder,
+	pulses []int16,
+	signalType, quantOffsetType, frameLength int,
+) {
 	var sumPulses, nLshifts [maxNbShellBlocks]int
 
 	// Decode rate level.

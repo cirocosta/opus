@@ -14,6 +14,9 @@ const nlsfStabilizeMaxLoops = 20 // MAX_LOOPS
 
 // nlsfStabilize is silk_NLSF_stabilize, for a single input data vector.
 // nDeltaMinQ15 has L+1 entries, and nDeltaMinQ15[L] must be >= 1.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func nlsfStabilize(nlsfQ15 []int16, nDeltaMinQ15 []int16, l int) {
 	var loops int
 	for loops = 0; loops < nlsfStabilizeMaxLoops; loops++ {
@@ -41,13 +44,14 @@ func nlsfStabilize(nlsfQ15 []int16, nDeltaMinQ15 []int16, l int) {
 			return
 		}
 
-		if idx == 0 {
+		switch idx {
+		case 0:
 			// Move away from lower limit.
 			nlsfQ15[0] = nDeltaMinQ15[0]
-		} else if idx == l {
+		case l:
 			// Move away from higher limit.
 			nlsfQ15[l-1] = int16(int32(1<<15) - int32(nDeltaMinQ15[l]))
-		} else {
+		default:
 			// Find the lower extreme for the location of the current
 			// center frequency.
 			minCenterQ15 := int32(0)
@@ -66,8 +70,10 @@ func nlsfStabilize(nlsfQ15 []int16, nDeltaMinQ15 []int16, l int) {
 
 			// Move apart, sorted by value, keeping the same center
 			// frequency.
-			centerFreqQ15 := int16(limit32(rshiftRound(int32(nlsfQ15[idx-1])+int32(nlsfQ15[idx]), 1),
-				minCenterQ15, maxCenterQ15))
+			centerFreqQ15 := int16(
+				limit32(rshiftRound(int32(nlsfQ15[idx-1])+int32(nlsfQ15[idx]), 1),
+					minCenterQ15, maxCenterQ15),
+			)
 			nlsfQ15[idx-1] = int16(int32(centerFreqQ15) - int32(nDeltaMinQ15[idx])>>1)
 			nlsfQ15[idx] = int16(int32(nlsfQ15[idx-1]) + int32(nDeltaMinQ15[idx]))
 		}
@@ -83,7 +89,9 @@ func nlsfStabilize(nlsfQ15 []int16, nDeltaMinQ15 []int16, l int) {
 
 		// Keep delta_min distance between the NLSFs.
 		for i := 1; i < l; i++ {
-			nlsfQ15[i] = int16(maxInt(int(nlsfQ15[i]), int(addSat16(nlsfQ15[i-1], nDeltaMinQ15[i]))))
+			nlsfQ15[i] = int16(
+				maxInt(int(nlsfQ15[i]), int(addSat16(nlsfQ15[i-1], nDeltaMinQ15[i]))),
+			)
 		}
 
 		// Last NLSF should be no higher than 1 - NDeltaMin[L].

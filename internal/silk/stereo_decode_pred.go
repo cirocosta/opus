@@ -22,7 +22,10 @@ func stereoDecodePred(psRangeDec *entcode.Decoder, predQ13 *[2]int32) {
 	for n = 0; n < 2; n++ {
 		ix[n][0] += 3 * ix[n][2]
 		lowQ13 := int32(stereoPredQuantQ13[ix[n][0]])
-		stepQ13 := smulwb(int32(stereoPredQuantQ13[ix[n][0]+1])-lowQ13, 6554) // SILK_FIX_CONST( 0.5 / STEREO_QUANT_SUB_STEPS, 16 )
+		stepQ13 := smulwb(
+			int32(stereoPredQuantQ13[ix[n][0]+1])-lowQ13,
+			6554,
+		) // SILK_FIX_CONST( 0.5 / STEREO_QUANT_SUB_STEPS, 16 )
 		predQ13[n] = smlabb(lowQ13, stepQ13, int32(2*ix[n][1]+1))
 	}
 

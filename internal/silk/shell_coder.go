@@ -7,8 +7,8 @@ import "github.com/cirocosta/opus/internal/entcode"
 // Shell coder; pulse-subframe length is hardcoded.
 
 // combinePulses is combine_pulses.
-func combinePulses(out []int, in []int, len int) {
-	for k := 0; k < len; k++ {
+func combinePulses(out []int, in []int, length int) {
+	for k := 0; k < length; k++ {
 		out[k] = in[2*k] + in[2*k+1]
 	}
 }

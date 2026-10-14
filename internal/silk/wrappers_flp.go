@@ -30,7 +30,11 @@ func nlsf2aFLP(pAR []float32, nlsfQ15 []int16, lpcOrder int) {
 
 // processNLSFsFLP is silk_process_NLSFs_FLP: floating-point NLSF
 // processing wrapper.
-func (psEncC *encoderState) processNLSFsFLP(predCoef *[2][maxLPCOrder]float32, nlsfQ15 []int16, prevNLSFQ15 []int16) {
+func (psEncC *encoderState) processNLSFsFLP(
+	predCoef *[2][maxLPCOrder]float32,
+	nlsfQ15 []int16,
+	prevNLSFQ15 []int16,
+) {
 	var predCoefQ12 [2][maxLPCOrder]int16
 
 	psEncC.processNLSFs(&predCoefQ12, nlsfQ15, prevNLSFQ15)
@@ -44,8 +48,17 @@ func (psEncC *encoderState) processNLSFsFLP(predCoef *[2][maxLPCOrder]float32, n
 
 // nsqWrapperFLP is silk_NSQ_wrapper_FLP: floating-point SILK NSQ
 // wrapper. x[xOff] is the C x pointer.
-func (psEnc *encoderStateFLP) nsqWrapperFLP(psEncCtrl *encoderControlFLP, psIndices *sideInfoIndices, psNSQ *nsqState,
-	pulses []int8, x []float32, xOff int) {
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
+func (psEnc *encoderStateFLP) nsqWrapperFLP(
+	psEncCtrl *encoderControlFLP,
+	psIndices *sideInfoIndices,
+	psNSQ *nsqState,
+	pulses []int8,
+	x []float32,
+	xOff int,
+) {
 	p := &psEnc.scratch.nsqParams
 	x16 := psEnc.scratch.x16[:]
 
@@ -53,7 +66,9 @@ func (psEnc *encoderStateFLP) nsqWrapperFLP(psEncCtrl *encoderControlFLP, psIndi
 	// Noise shape parameters.
 	for i := 0; i < psEnc.sCmn.nbSubfr; i++ {
 		for j := 0; j < psEnc.sCmn.shapingLPCOrder; j++ {
-			p.arQ13[i*maxShapeLPCOrder+j] = int16(float2intFLP(float32(psEncCtrl.ar[i*maxShapeLPCOrder+j] * 8192.0)))
+			p.arQ13[i*maxShapeLPCOrder+j] = int16(
+				float2intFLP(float32(psEncCtrl.ar[i*maxShapeLPCOrder+j] * 8192.0)),
+			)
 		}
 	}
 
@@ -102,9 +117,16 @@ func (psEnc *encoderStateFLP) nsqWrapperFLP(psEncCtrl *encoderControlFLP, psIndi
 
 // quantLTPGainsFLP is silk_quant_LTP_gains_FLP: floating-point SILK LTP
 // quantization wrapper.
-func quantLTPGainsFLP(b *[maxNbSubfr * ltpOrder]float32, cbkIndex []int8, periodicityIndex *int8, sumLogGainQ7 *int32,
-	predGainDB *float32, xx *[maxNbSubfr * ltpOrder * ltpOrder]float32, xX *[maxNbSubfr * ltpOrder]float32,
-	subfrLen, nbSubfr int) {
+func quantLTPGainsFLP(
+	b *[maxNbSubfr * ltpOrder]float32,
+	cbkIndex []int8,
+	periodicityIndex *int8,
+	sumLogGainQ7 *int32,
+	predGainDB *float32,
+	xx *[maxNbSubfr * ltpOrder * ltpOrder]float32,
+	xX *[maxNbSubfr * ltpOrder]float32,
+	subfrLen, nbSubfr int,
+) {
 	var (
 		bQ14  [maxNbSubfr * ltpOrder]int16
 		xxQ17 [maxNbSubfr * ltpOrder * ltpOrder]int32
@@ -118,7 +140,16 @@ func quantLTPGainsFLP(b *[maxNbSubfr * ltpOrder]float32, cbkIndex []int8, period
 		xXQ17[i] = float2intFLP(float32(xX[i] * 131072.0))
 	}
 
-	predGainDBQ7 := quantLTPGains(bQ14[:], cbkIndex, periodicityIndex, sumLogGainQ7, xxQ17[:], xXQ17[:], subfrLen, nbSubfr)
+	predGainDBQ7 := quantLTPGains(
+		bQ14[:],
+		cbkIndex,
+		periodicityIndex,
+		sumLogGainQ7,
+		xxQ17[:],
+		xXQ17[:],
+		subfrLen,
+		nbSubfr,
+	)
 
 	for i := 0; i < nbSubfr*ltpOrder; i++ {
 		b[i] = float32(float32(bQ14[i]) * (1.0 / 16384.0))

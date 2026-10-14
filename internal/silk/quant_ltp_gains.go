@@ -4,14 +4,18 @@ package silk
 
 // Constants of silk_quant_LTP_gains.
 var (
-	ltpGainSafetyQ7    = fixConst(0.4, 7)                          // SILK_FIX_CONST( 0.4, 7 )
-	ltpMaxSumLogGainQ7 = fixConst(float64(maxSumLogGainDB)/6.0, 7) // SILK_FIX_CONST( MAX_SUM_LOG_GAIN_DB / 6.0, 7 )
+	ltpGainSafetyQ7    = fixConst(0.4, 7) // SILK_FIX_CONST( 0.4, 7 )
+	ltpMaxSumLogGainQ7 = fixConst(
+		float64(maxSumLogGainDB)/6.0,
+		7,
+	) // SILK_FIX_CONST( MAX_SUM_LOG_GAIN_DB / 6.0, 7 )
 )
 
 // quantLTPGains is silk_quant_LTP_gains. It returns the LTP prediction
 // gain in dB, Q7.
 func quantLTPGains(bQ14 []int16, cbkIndex []int8, periodicityIndex *int8, sumLogGainQ7 *int32,
-	xxQ17 []int32, xXQ17 []int32, subfrLen, nbSubfr int) (predGainDBQ7 int) {
+	xxQ17 []int32, xXQ17 []int32, subfrLen, nbSubfr int,
+) (predGainDBQ7 int) {
 	var tempIdx [maxNbSubfr]int8
 	var resNrgQ15 int32
 

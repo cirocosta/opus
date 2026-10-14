@@ -6,8 +6,8 @@ package silk
 // USE_CELT_FIR = 0). The state is kept internally and the filter always
 // starts with zero state; the first d output samples are set to zero.
 // b holds the MA prediction coefficients, Q12 [d].
-func lpcAnalysisFilter(out []int16, in []int16, b []int16, len, d int) {
-	for ix := d; ix < len; ix++ {
+func lpcAnalysisFilter(out []int16, in []int16, b []int16, length, d int) {
+	for ix := d; ix < length; ix++ {
 		// in[p-j] is in_ptr[ -j ] in C, with in_ptr = &in[ ix - 1 ].
 		p := ix - 1
 		out32Q12 := smulbb(int32(in[p]), int32(b[0]))

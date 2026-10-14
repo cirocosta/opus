@@ -75,7 +75,8 @@ func (d *Decoder) Init() int {
 // when lostFlag is FlagPacketLost and may then be nil. The arch
 // argument of the C function is not ported.
 func (d *Decoder) Decode(decControl *DecControl, lostFlag int, newPacketFlag bool,
-	psRangeDec *entcode.Decoder, samplesOut []float32) (nSamplesOut int32, ret int) {
+	psRangeDec *entcode.Decoder, samplesOut []float32,
+) (nSamplesOut int32, ret int) {
 	nSamplesOut, ret = d.decode(decControl, lostFlag, newPacketFlag, psRangeDec, d.out16[:])
 	if ret != NoError && nSamplesOut == 0 {
 		return nSamplesOut, ret
@@ -90,7 +91,8 @@ func (d *Decoder) Decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 // DecodeInt16 is Decode with opus_int16 output (the samples before the
 // INT16TORES conversion).
 func (d *Decoder) DecodeInt16(decControl *DecControl, lostFlag int, newPacketFlag bool,
-	psRangeDec *entcode.Decoder, samplesOut []int16) (nSamplesOut int32, ret int) {
+	psRangeDec *entcode.Decoder, samplesOut []int16,
+) (nSamplesOut int32, ret int) {
 	return d.decode(decControl, lostFlag, newPacketFlag, psRangeDec, samplesOut)
 }
 
@@ -100,8 +102,12 @@ func int16ToRes(a int16) float32 {
 }
 
 // decode is the body of silk_Decode with int16 output.
+// preserve the reference prediction, gain and numerical decision sequence
+//
+//revive:disable-next-line:cognitive-complexity
 func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag bool,
-	psRangeDec *entcode.Decoder, samplesOut []int16) (int32, int) {
+	psRangeDec *entcode.Decoder, samplesOut []int16,
+) (int32, int) {
 	var nSamplesOutDec int
 	var msPredQ13 [2]int32
 	decodeOnlyMiddle := 0
@@ -185,7 +191,10 @@ func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 				if channelState[n].nFramesPerPacket == 1 {
 					channelState[n].lbrrFlags[0] = 1
 				} else {
-					lbrrSymbol := psRangeDec.DecIcdf(lbrrFlagsICDFPtr[channelState[n].nFramesPerPacket-2], 8) + 1
+					lbrrSymbol := psRangeDec.DecIcdf(
+						lbrrFlagsICDFPtr[channelState[n].nFramesPerPacket-2],
+						8,
+					) + 1
 					for i := 0; i < channelState[n].nFramesPerPacket; i++ {
 						channelState[n].lbrrFlags[i] = (lbrrSymbol >> uint(i)) & 1
 					}
@@ -214,8 +223,15 @@ func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 						}
 						channelState[n].decodeIndices(psRangeDec, i, true, condCoding)
 						pulses := channelState[n].scratch.pulses[:]
-						decodePulses(psRangeDec, pulses, int(channelState[n].indices.signalType),
-							int(channelState[n].indices.quantOffsetType), channelState[n].frameLength)
+						decodePulses(
+							psRangeDec,
+							pulses,
+							int(channelState[n].indices.signalType),
+							int(
+								channelState[n].indices.quantOffsetType,
+							),
+							channelState[n].frameLength,
+						)
 					}
 				}
 			}
@@ -290,7 +306,12 @@ func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 				condCoding = codeConditionally
 			}
 			var r int
-			nSamplesOutDec, r = channelState[n].decodeFrame(psRangeDec, samplesOut1Tmp[n][2:], lostFlag, condCoding)
+			nSamplesOutDec, r = channelState[n].decodeFrame(
+				psRangeDec,
+				samplesOut1Tmp[n][2:],
+				lostFlag,
+				condCoding,
+			)
 			ret += r
 		} else {
 			clear(samplesOut1Tmp[n][2 : 2+nSamplesOutDec])
@@ -300,7 +321,14 @@ func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 
 	if nChAPI == 2 && nChInternal == 2 {
 		// Convert Mid/Side to Left/Right.
-		stereoMSToLR(&d.sStereo, samplesOut1Tmp[0], samplesOut1Tmp[1], &msPredQ13, channelState[0].fsKHz, nSamplesOutDec)
+		stereoMSToLR(
+			&d.sStereo,
+			samplesOut1Tmp[0],
+			samplesOut1Tmp[1],
+			&msPredQ13,
+			channelState[0].fsKHz,
+			nSamplesOutDec,
+		)
 	} else {
 		// Buffering.
 		copy(samplesOut1Tmp[0][:2], d.sStereo.sMid[:])
@@ -308,14 +336,22 @@ func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 	}
 
 	// Number of output samples.
-	nSamplesOut := div32(int32(nSamplesOutDec)*decControl.APISampleRate, smulbb(int32(channelState[0].fsKHz), 1000))
+	nSamplesOut := div32(
+		int32(nSamplesOutDec)*decControl.APISampleRate,
+		smulbb(int32(channelState[0].fsKHz), 1000),
+	)
 
 	// Set up pointers to temp buffers.
 	resampleOut := d.samplesOut2Tmp[:nSamplesOut]
 
 	for n := 0; n < minInt(nChAPI, nChInternal); n++ {
 		// Resample decoded signal to API_sampleRate.
-		ret += resampler(&channelState[n].resamplerState, resampleOut, samplesOut1Tmp[n][1:1+nSamplesOutDec], nSamplesOutDec)
+		ret += resampler(
+			&channelState[n].resamplerState,
+			resampleOut,
+			samplesOut1Tmp[n][1:1+nSamplesOutDec],
+			nSamplesOutDec,
+		)
 
 		// Interleave if stereo output and stereo stream.
 		if nChAPI == 2 {
@@ -332,7 +368,12 @@ func (d *Decoder) decode(decControl *DecControl, lostFlag int, newPacketFlag boo
 		if stereoToMono {
 			// Resample right channel for newly collapsed stereo just in
 			// case we weren't doing collapsing when switching to mono.
-			ret += resampler(&channelState[1].resamplerState, resampleOut, samplesOut1Tmp[0][1:1+nSamplesOutDec], nSamplesOutDec)
+			ret += resampler(
+				&channelState[1].resamplerState,
+				resampleOut,
+				samplesOut1Tmp[0][1:1+nSamplesOutDec],
+				nSamplesOutDec,
+			)
 
 			for i := 0; i < int(nSamplesOut); i++ {
 				samplesOut[1+2*i] = resampleOut[i]

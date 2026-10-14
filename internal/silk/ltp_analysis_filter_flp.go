@@ -5,8 +5,15 @@ package silk
 // ltpAnalysisFilterFLP is silk_LTP_analysis_filter_FLP. x[xOff] is the
 // C x pointer: the input signal with preLength preceding samples (and
 // the pitch lag history before it).
-func ltpAnalysisFilterFLP(ltpRes []float32, x []float32, xOff int, b *[ltpOrder * maxNbSubfr]float32,
-	pitchL *[maxNbSubfr]int, invGains *[maxNbSubfr]float32, subfrLength, nbSubfr, preLength int) {
+func ltpAnalysisFilterFLP(
+	ltpRes []float32,
+	x []float32,
+	xOff int,
+	b *[ltpOrder * maxNbSubfr]float32,
+	pitchL *[maxNbSubfr]int,
+	invGains *[maxNbSubfr]float32,
+	subfrLength, nbSubfr, preLength int,
+) {
 	var btmp [ltpOrder]float32
 
 	xPtr := xOff
