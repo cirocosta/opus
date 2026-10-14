@@ -135,7 +135,19 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 	for i := 0; i < nb; i++ {
 		spreadWeight[i] = 1 + r.i()%4
 	}
-	spread := spreadingDecision(m, X, &average, lastDec, &hfAverage, &tapset, r.i()&1 != 0, effEnd, C, M, spreadWeight[:])
+	spread := spreadingDecision(
+		m,
+		X,
+		&average,
+		lastDec,
+		&hfAverage,
+		&tapset,
+		r.i()&1 != 0,
+		effEnd,
+		C,
+		M,
+		spreadWeight[:],
+	)
 	h.ints([]int{spread, average, hfAverage, tapset})
 	{
 		thr := []float32{2, 5, 9}
@@ -146,8 +158,25 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 
 	var enc entcode.Encoder
 	enc.Init(buf[:nbytes])
-	quantCoarseEnergy(m, start, end, effEnd, bandLogE[:], oldBandE[:], uint32(nbytes*8), errs[:], &enc, C, LM, nbytes,
-		forceIntra, &delayedIntra, twoPass, lossRate, lfe)
+	quantCoarseEnergy(
+		m,
+		start,
+		end,
+		effEnd,
+		bandLogE[:],
+		oldBandE[:],
+		uint32(nbytes*8),
+		errs[:],
+		&enc,
+		C,
+		LM,
+		nbytes,
+		forceIntra,
+		&delayedIntra,
+		twoPass,
+		lossRate,
+		lfe,
+	)
 	h.f32s(oldBandE[:C*nb])
 	hashRange(h, errs[:], C, nb, start, end)
 	h.f32s([]float32{delayedIntra})
@@ -176,8 +205,27 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 	bits -= antiRsv
 	var balance int32
 	rc := rangeCoder{enc: &enc}
-	codedBands := cltComputeAllocation(m, start, end, offsets[:], caps[:], allocTrim, &intensity, &dualStereo,
-		bits, &balance, pulses[:], fineQuant[:], finePriority[:], C, LM, rc, true, prev, signalBandwidth)
+	codedBands := cltComputeAllocation(
+		m,
+		start,
+		end,
+		offsets[:],
+		caps[:],
+		allocTrim,
+		&intensity,
+		&dualStereo,
+		bits,
+		&balance,
+		pulses[:],
+		fineQuant[:],
+		finePriority[:],
+		C,
+		LM,
+		rc,
+		true,
+		prev,
+		signalBandwidth,
+	)
 	h.ints([]int{codedBands, intensity, dualStereo, int(balance)})
 	h.ints(pulses[:])
 	h.ints(fineQuant[:])
@@ -190,9 +238,30 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 	if C == 2 {
 		Y = X[N:]
 	}
-	quantAllBands(true, m, start, end, X, Y, collapse[:], bandE[:], pulses[:], isTransient, spread,
-		dualStereo != 0, intensity, tfRes[:], int32(nbytes*(8<<bitRes))-antiRsv, balance, rc, LM, codedBands,
-		&seed, complexity, disableInv)
+	quantAllBands(
+		true,
+		m,
+		start,
+		end,
+		X,
+		Y,
+		collapse[:],
+		bandE[:],
+		pulses[:],
+		isTransient,
+		spread,
+		dualStereo != 0,
+		intensity,
+		tfRes[:],
+		int32(nbytes*(8<<bitRes))-antiRsv,
+		balance,
+		rc,
+		LM,
+		codedBands,
+		&seed,
+		complexity,
+		disableInv,
+	)
 	h.f32s(X[:C*N])
 	h.bytes(collapse[:C*nb])
 	h.u32(seed)
@@ -201,7 +270,18 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 		antiOn := uint32(r.i() & 1)
 		enc.EncBits(antiOn, 1)
 	}
-	quantEnergyFinalise(m, start, end, oldBandE[:], errs[:], fineQuant[:], finePriority[:], nbytes*8-enc.Tell(), &enc, C)
+	quantEnergyFinalise(
+		m,
+		start,
+		end,
+		oldBandE[:],
+		errs[:],
+		fineQuant[:],
+		finePriority[:],
+		nbytes*8-enc.Tell(),
+		&enc,
+		C,
+	)
 	h.f32s(oldBandE[:C*nb])
 	hashRange(h, errs[:], C, nb, start, end)
 	enc.Done()
@@ -225,8 +305,27 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 	var intensity2, dual2 int
 	var balance2 int32
 	rd := rangeCoder{dec: &dec}
-	codedBands2 := cltComputeAllocation(m, start, end, offsets[:], caps[:], allocTrim, &intensity2, &dual2,
-		bits, &balance2, pulses2[:], fineQuant2[:], finePriority2[:], C, LM, rd, false, 0, 0)
+	codedBands2 := cltComputeAllocation(
+		m,
+		start,
+		end,
+		offsets[:],
+		caps[:],
+		allocTrim,
+		&intensity2,
+		&dual2,
+		bits,
+		&balance2,
+		pulses2[:],
+		fineQuant2[:],
+		finePriority2[:],
+		C,
+		LM,
+		rd,
+		false,
+		0,
+		0,
+	)
 	h.ints([]int{codedBands2, intensity2, dual2, int(balance2)})
 	h.ints(pulses2[:])
 	h.ints(fineQuant2[:])
@@ -236,9 +335,30 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 	if C == 2 {
 		Y2 = X2[N:]
 	}
-	quantAllBands(false, m, start, end, X2, Y2, collapse2[:], nil, pulses2[:], isTransient, spread,
-		dual2 != 0, intensity2, tfRes[:], int32(nbytes*(8<<bitRes))-antiRsv, balance2, rd, LM, codedBands2,
-		&seed2, 0, disableInv)
+	quantAllBands(
+		false,
+		m,
+		start,
+		end,
+		X2,
+		Y2,
+		collapse2[:],
+		nil,
+		pulses2[:],
+		isTransient,
+		spread,
+		dual2 != 0,
+		intensity2,
+		tfRes[:],
+		int32(nbytes*(8<<bitRes))-antiRsv,
+		balance2,
+		rd,
+		LM,
+		codedBands2,
+		&seed2,
+		0,
+		disableInv,
+	)
 	h.f32s(X2[:C*N])
 	h.bytes(collapse2[:C*nb])
 	h.u32(seed2)
@@ -246,10 +366,35 @@ func encfCase(m *Mode, r *encfRand, h *fnvHash) {
 	if antiRsv > 0 {
 		antiOn = dec.DecBits(1) != 0
 	}
-	unquantEnergyFinalise(m, start, end, oldBandE2[:], fineQuant2[:], finePriority2[:], nbytes*8-dec.Tell(), &dec, C)
+	unquantEnergyFinalise(
+		m,
+		start,
+		end,
+		oldBandE2[:],
+		fineQuant2[:],
+		finePriority2[:],
+		nbytes*8-dec.Tell(),
+		&dec,
+		C,
+	)
 	h.f32s(oldBandE2[:C*nb])
 	if antiOn {
-		antiCollapse(m, X2, collapse2[:], LM, C, N, start, end, oldBandE2[:], prev1[:], prev2[:], pulses2[:], seed2, false)
+		antiCollapse(
+			m,
+			X2,
+			collapse2[:],
+			LM,
+			C,
+			N,
+			start,
+			end,
+			oldBandE2[:],
+			prev1[:],
+			prev2[:],
+			pulses2[:],
+			seed2,
+			false,
+		)
 		h.f32s(X2[:C*N])
 	}
 	h.u32(dec.Rng)

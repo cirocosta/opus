@@ -88,7 +88,22 @@ func parseEncSpec(line string) encSpec {
 type encParams struct{ br, vbr, cvbr, cx, lm, pred, loss, end, sc, nb int }
 
 var (
-	encBrs  = [14]int{6000, 12000, 16000, 24000, 32000, 48000, 64000, 96000, 128000, 192000, 256000, 320000, 510000, -1}
+	encBrs = [14]int{
+		6000,
+		12000,
+		16000,
+		24000,
+		32000,
+		48000,
+		64000,
+		96000,
+		128000,
+		192000,
+		256000,
+		320000,
+		510000,
+		-1,
+	}
 	encEnds = [4]int{13, 17, 19, 21}
 	encOffs = [4]int{60, 100, 140, 240}
 )
@@ -219,7 +234,18 @@ func runEncCase(t *testing.T, s encSpec, pcm []int16, verbose bool) encResult {
 		t.Fatalf("%s: decoder init: %d", s.name, ret)
 	}
 	d.SetSignalling(0)
-	p := encParams{br: s.br, vbr: s.vbr, cvbr: s.cvbr, cx: s.cx, lm: s.lm, pred: s.pred, loss: s.loss, end: s.end, sc: s.sc, nb: s.nb}
+	p := encParams{
+		br:   s.br,
+		vbr:  s.vbr,
+		cvbr: s.cvbr,
+		cx:   s.cx,
+		lm:   s.lm,
+		pred: s.pred,
+		loss: s.loss,
+		end:  s.end,
+		sc:   s.sc,
+		nb:   s.nb,
+	}
 	var pcmf [2 * 960]float32
 	var out [2 * 960]float32
 	var buf [1500]byte
@@ -353,8 +379,24 @@ func runEncCase(t *testing.T, s encSpec, pcm []int16, verbose bool) encResult {
 			res.pk0 = fmt.Sprintf("%x", buf[:min(ret, 24)])
 		}
 		if verbose {
-			res.lines = append(res.lines, fmt.Sprintf("f=%d lm=%d br=%d vbr=%d cvbr=%d cx=%d nb=%d sc=%d end=%d ret=%d rng=%08x h=%016x",
-				f, p.lm, p.br, p.vbr, p.cvbr, p.cx, nb, p.sc, p.end, ret, rng, h))
+			res.lines = append(
+				res.lines,
+				fmt.Sprintf(
+					"f=%d lm=%d br=%d vbr=%d cvbr=%d cx=%d nb=%d sc=%d end=%d ret=%d rng=%08x h=%016x",
+					f,
+					p.lm,
+					p.br,
+					p.vbr,
+					p.cvbr,
+					p.cx,
+					nb,
+					p.sc,
+					p.end,
+					ret,
+					rng,
+					h,
+				),
+			)
 		}
 		// Round trip through the decoder.
 		if ret > 0 {
@@ -386,7 +428,13 @@ func runEncCase(t *testing.T, s encSpec, pcm []int16, verbose bool) encResult {
 				t.Fatalf("%s: frame %d: decode returned %d, want %d", s.name, f, dret, fsz)
 			}
 			if d.FinalRange() != rng {
-				t.Fatalf("%s: frame %d: decoder range %08x, encoder %08x", s.name, f, d.FinalRange(), rng)
+				t.Fatalf(
+					"%s: frame %d: decoder range %08x, encoder %08x",
+					s.name,
+					f,
+					d.FinalRange(),
+					rng,
+				)
 			}
 		}
 	}
@@ -399,7 +447,7 @@ func readPCMGz(t *testing.T, path string) []int16 {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	z, err := gzip.NewReader(f)
 	if err != nil {
 		t.Fatal(err)
@@ -433,7 +481,7 @@ func readEncGoldens(t *testing.T, path string) []encGolden {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var gs []encGolden
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {

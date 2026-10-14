@@ -130,7 +130,9 @@ func TestEncoderNoAllocs(t *testing.T) {
 		e.SetVBR(c.vbr)
 		e.SetBitrate(int32(48000 * c.ch))
 		e.SetStartBand(c.start)
-		e.SetAnalysis(&AnalysisInfo{Valid: 1, Tonality: .5, Activity: .3, Bandwidth: 20, MaxPitchRatio: 1})
+		e.SetAnalysis(
+			&AnalysisInfo{Valid: 1, Tonality: .5, Activity: .3, Bandwidth: 20, MaxPitchRatio: 1},
+		)
 		if c.mask {
 			e.SetEnergyMask(mask)
 		}

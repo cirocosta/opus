@@ -73,10 +73,26 @@ func (rc rangeCoder) tellFrac() int {
 }
 
 // interpBits2pulses is interp_bits2pulses.
-func interpBits2pulses(m *Mode, start, end, skipStart int,
-	bits1, bits2, thresh, cap []int, total int32, outBalance *int32,
-	skipRsv int, intensity *int, intensityRsv int, dualStereo *int, dualStereoRsv int,
-	bits, ebits, finePriority []int, C, LM int, ec rangeCoder, encode bool, prev, signalBandwidth int) int {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func interpBits2pulses(
+	m *Mode,
+	start, end, skipStart int,
+	bits1, bits2, thresh, caps []int,
+	total int32,
+	outBalance *int32,
+	skipRsv int,
+	intensity *int,
+	intensityRsv int,
+	dualStereo *int,
+	dualStereoRsv int,
+	bits, ebits, finePriority []int,
+	C, LM int,
+	ec rangeCoder,
+	encode bool,
+	prev, signalBandwidth int,
+) int {
 	var psum int32
 	allocFloor := C << bitRes
 	stereo := 0
@@ -95,7 +111,7 @@ func interpBits2pulses(m *Mode, start, end, skipStart int,
 			if tmp >= thresh[j] || done {
 				done = true
 				// Don't allocate more than we can actually use.
-				psum += int32(min(tmp, cap[j]))
+				psum += int32(min(tmp, caps[j]))
 			} else if tmp >= allocFloor {
 				psum += int32(allocFloor)
 			}
@@ -120,7 +136,7 @@ func interpBits2pulses(m *Mode, start, end, skipStart int,
 			done = true
 		}
 		// Don't allocate more than we can actually use.
-		tmp = min(tmp, cap[j])
+		tmp = min(tmp, caps[j])
 		bits[j] = tmp
 		psum += int32(tmp)
 	}
@@ -168,7 +184,8 @@ func interpBits2pulses(m *Mode, start, end, skipStart int,
 						depthThreshold = 9
 					}
 				}
-				if codedBands <= start+2 || (bandBits > (depthThreshold*bandWidth<<uint(LM)<<bitRes)>>4 && j <= signalBandwidth) {
+				if codedBands <= start+2 ||
+					(bandBits > (depthThreshold*bandWidth<<uint(LM)<<bitRes)>>4 && j <= signalBandwidth) {
 					ec.enc.EncBitLogp(1, 1)
 					break
 				}
@@ -242,7 +259,7 @@ func interpBits2pulses(m *Mode, start, end, skipStart int,
 		bit := int32(bits[j]) + balance
 		var excess int32
 		if N > 1 {
-			excess = max(bit-int32(cap[j]), 0)
+			excess = max(bit-int32(caps[j]), 0)
 			bits[j] = int(bit - excess)
 
 			// Compensate for the extra DoF in stereo.
@@ -331,8 +348,23 @@ func b2i(b bool) int {
 
 // cltComputeAllocation is clt_compute_allocation. ec is the encoder when
 // encode is true and the decoder otherwise.
-func cltComputeAllocation(m *Mode, start, end int, offsets, cap []int, allocTrim int, intensity, dualStereo *int,
-	total int32, balance *int32, pulses, ebits, finePriority []int, C, LM int, ec rangeCoder, encode bool, prev, signalBandwidth int) int {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func cltComputeAllocation(
+	m *Mode,
+	start, end int,
+	offsets, caps []int,
+	allocTrim int,
+	intensity, dualStereo *int,
+	total int32,
+	balance *int32,
+	pulses, ebits, finePriority []int,
+	C, LM int,
+	ec rangeCoder,
+	encode bool,
+	prev, signalBandwidth int,
+) int {
 	var bits1, bits2, thresh, trimOffset [maxBands]int
 
 	total = max(total, 0)
@@ -387,7 +419,7 @@ func cltComputeAllocation(m *Mode, start, end int, offsets, cap []int, allocTrim
 			if bitsj >= thresh[j] || done {
 				done = true
 				// Don't allocate more than we can actually use.
-				psum += min(bitsj, cap[j])
+				psum += min(bitsj, caps[j])
 			} else if bitsj >= C<<bitRes {
 				psum += C << bitRes
 			}
@@ -408,7 +440,7 @@ func cltComputeAllocation(m *Mode, start, end int, offsets, cap []int, allocTrim
 		bits1j := C * N * int(m.AllocVectors[lo*length+j]) << uint(LM) >> 2
 		var bits2j int
 		if hi >= m.NbAllocVectors {
-			bits2j = cap[j]
+			bits2j = caps[j]
 		} else {
 			bits2j = C * N * int(m.AllocVectors[hi*length+j]) << uint(LM) >> 2
 		}
@@ -429,7 +461,7 @@ func cltComputeAllocation(m *Mode, start, end int, offsets, cap []int, allocTrim
 		bits1[j] = bits1j
 		bits2[j] = bits2j
 	}
-	return interpBits2pulses(m, start, end, skipStart, bits1[:], bits2[:], thresh[:], cap,
+	return interpBits2pulses(m, start, end, skipStart, bits1[:], bits2[:], thresh[:], caps,
 		total, balance, skipRsv, intensity, intensityRsv, dualStereo, dualStereoRsv,
 		pulses, ebits, finePriority, C, LM, ec, encode, prev, signalBandwidth)
 }

@@ -61,6 +61,9 @@ func encodePulses(y []int, n, k int, enc *entcode.Encoder) {
 
 // cwrsi is cwrsi: it decodes index i into the pulse vector y and returns
 // the squared norm of y (as opus_val32, a float in this build).
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func cwrsi(n, k int, i uint32, y []int) float32 {
 	var yy float32
 	yi := 0

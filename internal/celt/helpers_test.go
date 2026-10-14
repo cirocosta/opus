@@ -187,7 +187,7 @@ func readGoldens(t *testing.T, name string) []golden {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var out []golden
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
@@ -233,7 +233,14 @@ func compareDump(t *testing.T, got []byte) {
 			for j := lo; j+4 <= hi; j += 4 {
 				g := binary.LittleEndian.Uint32(got[j:])
 				w := binary.LittleEndian.Uint32(want[j:])
-				t.Logf("  word %d: got %08x (%g) want %08x (%g)", j/4, g, math.Float32frombits(g), w, math.Float32frombits(w))
+				t.Logf(
+					"  word %d: got %08x (%g) want %08x (%g)",
+					j/4,
+					g,
+					math.Float32frombits(g),
+					w,
+					math.Float32frombits(w),
+				)
 			}
 			return
 		}

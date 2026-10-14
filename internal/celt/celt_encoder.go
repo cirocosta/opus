@@ -33,7 +33,6 @@ type encoderState struct {
 	silkInfo        SILKInfo
 
 	preemphMemE [2]float32
-	preemphMemD [2]float32
 
 	// VBR-related parameters.
 	vbrReservoir int32
@@ -348,8 +347,19 @@ var invTable = [128]uint8{
 
 // transientAnalysis is transient_analysis. tmp is scratch of at least
 // length values.
-func transientAnalysis(in []float32, length, C int, tfEstimate *float32, tfChan *int, allowWeakTransients bool,
-	weakTransient *bool, toneFreq, toneishness float32, tmp []float32) bool {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func transientAnalysis(
+	in []float32,
+	length, C int,
+	tfEstimate *float32,
+	tfChan *int,
+	allowWeakTransients bool,
+	weakTransient *bool,
+	toneFreq, toneishness float32,
+	tmp []float32,
+) bool {
 	var maskMetric int32
 	// Forward masking: 6.7 dB/ms.
 	forwardDecay := float32(.0625)
@@ -490,6 +500,9 @@ func patchTransientDecision(newE, oldE []float32, nbEBands, start, end, C int) b
 
 // computeMDCTs is compute_mdcts: it applies the window and computes the
 // MDCT for all sub-frames and all channels in a frame.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func computeMDCTs(mode *Mode, shortBlocks int, in, out []float32, C, CC, LM, upsample int) {
 	overlap := mode.Overlap
 	var N, B, shift int
@@ -505,7 +518,15 @@ func computeMDCTs(mode *Mode, shortBlocks int, in, out []float32, C, CC, LM, ups
 	for c := 0; c < CC; c++ {
 		for b := 0; b < B; b++ {
 			// Interleaving the sub-frames while doing the MDCTs.
-			dsp.CltMDCTForward(mode.MDCT, in[c*(B*N+overlap)+b*N:], out[b+c*N*B:], mode.Window, overlap, shift, B)
+			dsp.CltMDCTForward(
+				mode.MDCT,
+				in[c*(B*N+overlap)+b*N:],
+				out[b+c*N*B:],
+				mode.Window,
+				overlap,
+				shift,
+				B,
+			)
 		}
 	}
 	if CC == 2 && C == 1 {
@@ -580,8 +601,21 @@ func l1Metric(tmp []float32, N, LM int, bias float32) float32 {
 }
 
 // tfAnalysis is tf_analysis.
-func tfAnalysis(m *Mode, length int, isTransient bool, tfRes []int, lambda int, X []float32, N0, LM int,
-	tfEstimate float32, tfChan int, importance []int) int {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func tfAnalysis(
+	m *Mode,
+	length int,
+	isTransient bool,
+	tfRes []int,
+	lambda int,
+	X []float32,
+	N0, LM int,
+	tfEstimate float32,
+	tfChan int,
+	importance []int,
+) int {
 	var metric, path0, path1 [maxBands]int
 	var tmp, tmp1 [maxBandSize]float32
 	var selcost [2]int
@@ -614,7 +648,7 @@ func tfAnalysis(m *Mode, length int, isTransient bool, tfRes []int, lambda int, 
 			}
 		}
 		kmax := LM
-		if !(isTransient || narrow) {
+		if !isTransient && !narrow {
 			kmax++
 		}
 		for k := 0; k < kmax; k++ {
@@ -641,7 +675,7 @@ func tfAnalysis(m *Mode, length int, isTransient bool, tfRes []int, lambda int, 
 		// For bands that can't be split to -1, set the metric to the
 		// half-way point to avoid biasing the decision.
 		if narrow && (metric[i] == 0 || metric[i] == -2*LM) {
-			metric[i] -= 1
+			metric[i]--
 		}
 	}
 	tsel := &tfSelectTable[LM]
@@ -715,7 +749,13 @@ func tfAnalysis(m *Mode, length int, isTransient bool, tfRes []int, lambda int, 
 }
 
 // tfEncode is tf_encode.
-func tfEncode(start, end int, isTransient bool, tfRes []int, LM, tfSelect int, enc *entcode.Encoder) {
+func tfEncode(
+	start, end int,
+	isTransient bool,
+	tfRes []int,
+	LM, tfSelect int,
+	enc *entcode.Encoder,
+) {
 	it := b2i(isTransient)
 	budget := enc.Storage * 8
 	tell := uint32(enc.Tell())
@@ -755,8 +795,21 @@ func tfEncode(start, end int, isTransient bool, tfRes []int, LM, tfSelect int, e
 }
 
 // allocTrimAnalysis is alloc_trim_analysis.
-func allocTrimAnalysis(m *Mode, X []float32, bandLogE []float32, end, LM, C, N0 int, analysis *AnalysisInfo,
-	stereoSaving *float32, tfEstimate float32, intensity int, surroundTrim float32, equivRate int32) int {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func allocTrimAnalysis(
+	m *Mode,
+	X []float32,
+	bandLogE []float32,
+	end, LM, C, N0 int,
+	analysis *AnalysisInfo,
+	stereoSaving *float32,
+	tfEstimate float32,
+	intensity int,
+	surroundTrim float32,
+	equivRate int32,
+) int {
 	var diff float32
 	trim := float32(5)
 	// At low bitrate, reducing the trim seems to help. At higher
@@ -773,7 +826,11 @@ func allocTrimAnalysis(m *Mode, X []float32, bandLogE []float32, end, LM, C, N0 
 		// Compute inter-channel correlation for low frequencies.
 		for i := 0; i < 8; i++ {
 			off := int(m.EBands[i]) << uint(LM)
-			partial := dsp.CeltInnerProd(X[off:], X[N0+off:], int(m.EBands[i+1]-m.EBands[i])<<uint(LM))
+			partial := dsp.CeltInnerProd(
+				X[off:],
+				X[N0+off:],
+				int(m.EBands[i+1]-m.EBands[i])<<uint(LM),
+			)
 			sum = sum + partial
 		}
 		sum = float32((1.0 / 8) * sum)
@@ -781,7 +838,11 @@ func allocTrimAnalysis(m *Mode, X []float32, bandLogE []float32, end, LM, C, N0 
 		minXC := sum
 		for i := 8; i < intensity; i++ {
 			off := int(m.EBands[i]) << uint(LM)
-			partial := dsp.CeltInnerProd(X[off:], X[N0+off:], int(m.EBands[i+1]-m.EBands[i])<<uint(LM))
+			partial := dsp.CeltInnerProd(
+				X[off:],
+				X[N0+off:],
+				int(m.EBands[i+1]-m.EBands[i])<<uint(LM),
+			)
 			minXC = dsp.Min16(minXC, dsp.Abs16(partial))
 		}
 		minXC = dsp.Min16(1, dsp.Abs16(minXC))
@@ -859,7 +920,7 @@ func medianOf5(x []float32) float32 {
 		t4 = x[4]
 	}
 	if t0 > t3 {
-		t0, t3 = t3, t0
+		t3 = t0
 		t1, t4 = t4, t1
 	}
 	if t2 > t1 {
@@ -894,10 +955,27 @@ func medianOf3(x []float32) float32 {
 }
 
 // dynallocAnalysis is dynalloc_analysis. It returns maxDepth.
-func dynallocAnalysis(bandLogE, bandLogE2, oldBandE []float32, nbEBands, start, end, C int, offsets []int,
-	lsbDepth int, logN []int16, isTransient bool, vbr, constrainedVBR int, eBands []int16, LM,
-	effectiveBytes int, totBoostOut *int32, lfe bool, surroundDynalloc []float32, analysis *AnalysisInfo,
-	importance, spreadWeight []int, toneFreq, toneishness float32) float32 {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func dynallocAnalysis(
+	bandLogE, bandLogE2, oldBandE []float32,
+	nbEBands, start, end, C int,
+	offsets []int,
+	lsbDepth int,
+	logN []int16,
+	isTransient bool,
+	vbr, constrainedVBR int,
+	eBands []int16,
+	LM,
+	effectiveBytes int,
+	totBoostOut *int32,
+	lfe bool,
+	surroundDynalloc []float32,
+	analysis *AnalysisInfo,
+	importance, spreadWeight []int,
+	toneFreq, toneishness float32,
+) float32 {
 	var totBoost int32
 	var follower, noiseFloor [2 * maxBands]float32
 	var bandLogE3 [maxBands]float32
@@ -1002,7 +1080,9 @@ func dynallocAnalysis(bandLogE, bandLogE2, oldBandE []float32, nbEBands, start, 
 				// Consider 24 dB "cross-talk".
 				follower[nbEBands+i] = dsp.Max32(follower[nbEBands+i], follower[i]-4)
 				follower[i] = dsp.Max32(follower[i], follower[nbEBands+i]-4)
-				follower[i] = float32(.5 * (dsp.Max32(0, bandLogE[i]-follower[i]) + dsp.Max32(0, bandLogE[nbEBands+i]-follower[nbEBands+i])))
+				follower[i] = float32(
+					.5 * (dsp.Max32(0, bandLogE[i]-follower[i]) + dsp.Max32(0, bandLogE[nbEBands+i]-follower[nbEBands+i])),
+				)
 			}
 		} else {
 			for i := start; i < end; i++ {
@@ -1040,10 +1120,10 @@ func dynallocAnalysis(bandLogE, bandLogE2, oldBandE []float32, nbEBands, start, 
 					follower[i] += 2
 				}
 				if freqBin >= lo-1 && freqBin <= hi+1 {
-					follower[i] += 1
+					follower[i]++
 				}
 				if freqBin >= lo-2 && freqBin <= hi+2 {
-					follower[i] += 1
+					follower[i]++
 				}
 				if freqBin >= lo-3 && freqBin <= hi+3 {
 					follower[i] += .5
@@ -1051,7 +1131,7 @@ func dynallocAnalysis(bandLogE, bandLogE2, oldBandE []float32, nbEBands, start, 
 			}
 			if freqBin >= int(eBands[end]) {
 				follower[end-1] += 2
-				follower[end-2] += 1
+				follower[end-2]++
 			}
 		}
 		if analysis.Valid != 0 {
@@ -1077,9 +1157,9 @@ func dynallocAnalysis(bandLogE, bandLogE2, oldBandE []float32, nbEBands, start, 
 			// 2/3 of the bits.
 			if (vbr == 0 || (constrainedVBR != 0 && !isTransient)) &&
 				(int(totBoost)+boostBits)>>bitRes>>3 > 2*effectiveBytes/3 {
-				cap := int32((2 * effectiveBytes / 3) << bitRes << 3)
-				offsets[i] = int(cap - totBoost)
-				totBoost = cap
+				caps := int32((2 * effectiveBytes / 3) << bitRes << 3)
+				offsets[i] = int(caps - totBoost)
+				totBoost = caps
 				break
 			}
 			offsets[i] = boost
@@ -1195,9 +1275,22 @@ func toneDetect(in []float32, CC, N int, toneishness *float32, Fs int32, x []flo
 }
 
 // runPrefilter is run_prefilter.
-func (e *Encoder) runPrefilter(in []float32, CC, N, prefilterTapset int, pitch *int, gain *float32, qgain *int,
-	enabled bool, complexity int, tfEstimate float32, nbAvailableBytes int, analysis *AnalysisInfo,
-	toneFreq, toneishness float32) bool {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func (e *Encoder) runPrefilter(
+	in []float32,
+	CC, N, prefilterTapset int,
+	pitch *int,
+	gain *float32,
+	qgain *int,
+	enabled bool,
+	complexity int,
+	tfEstimate float32,
+	nbAvailableBytes int,
+	analysis *AnalysisInfo,
+	toneFreq, toneishness float32,
+) bool {
 	st := &e.st
 	var pitchIndex int
 	var gain1 float32
@@ -1238,7 +1331,10 @@ func (e *Encoder) runPrefilter(in []float32, CC, N, prefilterTapset int, pitch *
 			multiple++
 		}
 		if toneFreq > 0.006148 {
-			pitchIndex = min(truncInt(math.Floor(.5+2.*math.Pi*float64(multiple)/float64(toneFreq))), CombFilterMaxPeriod-2)
+			pitchIndex = min(
+				truncInt(math.Floor(.5+2.*math.Pi*float64(multiple)/float64(toneFreq))),
+				CombFilterMaxPeriod-2,
+			)
 		} else {
 			// If the pitch is too low, using a very high pitch will
 			// actually give us an improvement due to the DC component of
@@ -1256,7 +1352,15 @@ func (e *Encoder) runPrefilter(in []float32, CC, N, prefilterTapset int, pitch *
 		pitchIndex = dsp.PitchSearch(pitchBuf[maxPeriod>>1:], pitchBuf, N, maxPeriod-3*minPeriod)
 		pitchIndex = maxPeriod - pitchIndex
 
-		gain1 = dsp.RemoveDoubling(pitchBuf, maxPeriod, minPeriod, N, &pitchIndex, st.prefilterPeriod, st.prefilterGain)
+		gain1 = dsp.RemoveDoubling(
+			pitchBuf,
+			maxPeriod,
+			minPeriod,
+			N,
+			&pitchIndex,
+			st.prefilterPeriod,
+			st.prefilterGain,
+		)
 		if pitchIndex > maxPeriod-2 {
 			pitchIndex = maxPeriod - 2
 		}
@@ -1329,9 +1433,21 @@ func (e *Encoder) runPrefilter(in []float32, CC, N, prefilterTapset int, pitch *
 			before[c] += dsp.Abs32(in[c*(N+overlap)+overlap+i])
 		}
 		if offset != 0 {
-			combFilter(in, c*(N+overlap)+overlap, pre[c], maxPeriod,
-				st.prefilterPeriod, st.prefilterPeriod, offset, -st.prefilterGain, -st.prefilterGain,
-				st.prefilterTapset, st.prefilterTapset, nil, 0)
+			combFilter(
+				in,
+				c*(N+overlap)+overlap,
+				pre[c],
+				maxPeriod,
+				st.prefilterPeriod,
+				st.prefilterPeriod,
+				offset,
+				-st.prefilterGain,
+				-st.prefilterGain,
+				st.prefilterTapset,
+				st.prefilterTapset,
+				nil,
+				0,
+			)
 		}
 
 		combFilter(in, c*(N+overlap)+overlap+offset, pre[c], maxPeriod+offset,
@@ -1381,8 +1497,14 @@ func (e *Encoder) runPrefilter(in []float32, CC, N, prefilterTapset int, pitch *
 		if N > maxPeriod {
 			copy(prefilterMem[c*maxPeriod:(c+1)*maxPeriod], pre[c][N:N+maxPeriod])
 		} else {
-			copy(prefilterMem[c*maxPeriod:c*maxPeriod+maxPeriod-N], prefilterMem[c*maxPeriod+N:(c+1)*maxPeriod])
-			copy(prefilterMem[c*maxPeriod+maxPeriod-N:(c+1)*maxPeriod], pre[c][maxPeriod:maxPeriod+N])
+			copy(
+				prefilterMem[c*maxPeriod:c*maxPeriod+maxPeriod-N],
+				prefilterMem[c*maxPeriod+N:(c+1)*maxPeriod],
+			)
+			copy(
+				prefilterMem[c*maxPeriod+maxPeriod-N:(c+1)*maxPeriod],
+				pre[c][maxPeriod:maxPeriod+N],
+			)
 		}
 	}
 
@@ -1393,9 +1515,26 @@ func (e *Encoder) runPrefilter(in []float32, CC, N, prefilterTapset int, pitch *
 }
 
 // computeVBR is compute_vbr.
-func computeVBR(mode *Mode, analysis *AnalysisInfo, baseTarget int32, LM int, bitrate int32, lastCodedBands, C,
-	intensity, constrainedVBR int, stereoSaving float32, totBoost int32, tfEstimate float32, pitchChange bool,
-	maxDepth float32, lfe bool, hasSurroundMask bool, surroundMasking, temporalVBR float32) int32 {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func computeVBR(
+	mode *Mode,
+	analysis *AnalysisInfo,
+	baseTarget int32,
+	LM int,
+	bitrate int32,
+	lastCodedBands, C,
+	intensity, constrainedVBR int,
+	stereoSaving float32,
+	totBoost int32,
+	tfEstimate float32,
+	pitchChange bool,
+	maxDepth float32,
+	lfe bool,
+	hasSurroundMask bool,
+	surroundMasking, temporalVBR float32,
+) int32 {
 	nbEBands := mode.NbEBands
 	eBands := mode.EBands
 
@@ -1411,7 +1550,9 @@ func computeVBR(mode *Mode, analysis *AnalysisInfo, baseTarget int32, LM int, bi
 	target := baseTarget
 
 	if analysis.Valid != 0 && float64(analysis.Activity) < .4 {
-		target -= int32(truncInt(float64(float32(float32(codedBins<<bitRes) * (.4 - analysis.Activity)))))
+		target -= int32(
+			truncInt(float64(float32(float32(codedBins<<bitRes) * (.4 - analysis.Activity)))),
+		)
 	}
 	// Stereo savings.
 	if C == 2 {
@@ -1434,7 +1575,9 @@ func computeVBR(mode *Mode, analysis *AnalysisInfo, baseTarget int32, LM int, bi
 	if analysis.Valid != 0 && !lfe {
 		// Tonality boost (compensating for the average).
 		tonal := dsp.Max16(0, analysis.Tonality-.15) - 0.12
-		tonalTarget := target + int32(truncInt(float64(float32(float32(float32(codedBins<<bitRes)*1.2)*tonal))))
+		tonalTarget := target + int32(
+			truncInt(float64(float32(float32(float32(codedBins<<bitRes)*1.2)*tonal))),
+		)
 		if pitchChange {
 			tonalTarget += int32(truncInt(float64(float32(float32(codedBins<<bitRes) * .8))))
 		}
@@ -1442,7 +1585,9 @@ func computeVBR(mode *Mode, analysis *AnalysisInfo, baseTarget int32, LM int, bi
 	}
 
 	if hasSurroundMask && !lfe {
-		surroundTarget := target + int32(truncInt(float64(float32(surroundMasking*float32(codedBins<<bitRes)))))
+		surroundTarget := target + int32(
+			truncInt(float64(float32(surroundMasking*float32(codedBins<<bitRes)))),
+		)
 		target = max(target/4, surroundTarget)
 	}
 
@@ -1474,9 +1619,11 @@ func computeVBR(mode *Mode, analysis *AnalysisInfo, baseTarget int32, LM int, bi
 var (
 	intensityThresholds = []float32{
 		// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19  20  off
-		1, 2, 3, 4, 5, 6, 7, 8, 16, 24, 36, 44, 50, 56, 62, 67, 72, 79, 88, 106, 134}
+		1, 2, 3, 4, 5, 6, 7, 8, 16, 24, 36, 44, 50, 56, 62, 67, 72, 79, 88, 106, 134,
+	}
 	intensityHisteresis = []float32{
-		1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 5, 6, 8, 8}
+		1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 5, 6, 8, 8,
+	}
 )
 
 // EncodeWithEC is celt_encode_with_ec. It encodes one frame of frameSize
@@ -1489,7 +1636,16 @@ var (
 // bytes. Otherwise enc must already be initialized (hybrid mode, after
 // SILK) on a buffer of at least nbCompressedBytes bytes, compressed is
 // not used, and the encoder finishes enc with Done.
-func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, nbCompressedBytes int, enc *entcode.Encoder) int {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func (e *Encoder) EncodeWithEC(
+	pcm []float32,
+	frameSize int,
+	compressed []byte,
+	nbCompressedBytes int,
+	enc *entcode.Encoder,
+) int {
 	st := &e.st
 	sc := &e.scratch
 	var bits int32
@@ -1622,7 +1778,10 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 			if tell == 1 {
 				lo = 2
 			}
-			maxAllowed := min(int(max(lo, (vbrRate+vbrBound-st.vbrReservoir)>>(bitRes+3))), nbAvailableBytes)
+			maxAllowed := min(
+				int(max(lo, (vbrRate+vbrBound-st.vbrReservoir)>>(bitRes+3))),
+				nbAvailableBytes,
+			)
 			if maxAllowed < nbAvailableBytes {
 				nbCompressedBytes = nbFilledBytes + maxAllowed
 				nbAvailableBytes = maxAllowed
@@ -1640,7 +1799,9 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 	in := sc.in[:CC*(N+overlap)]
 
 	sampleMax = dsp.Max32(st.overlapMax, dsp.CeltMaxabsRes(pcm[:C*(N-overlap)/e.upsample]))
-	st.overlapMax = dsp.CeltMaxabsRes(pcm[C*(N-overlap)/e.upsample : C*(N-overlap)/e.upsample+C*overlap/e.upsample])
+	st.overlapMax = dsp.CeltMaxabsRes(
+		pcm[C*(N-overlap)/e.upsample : C*(N-overlap)/e.upsample+C*overlap/e.upsample],
+	)
 	sampleMax = dsp.Max32(sampleMax, st.overlapMax)
 	silence = sampleMax <= float32(1)/float32(int32(1)<<uint(e.lsbDepth))
 	if tell == 1 {
@@ -1666,7 +1827,10 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 		needClip := e.clip && sampleMax > 65536
 		Preemphasis(pcm[c:], in[c*(N+overlap)+overlap:], N, CC, e.upsample,
 			mode.Preemph[:], &st.preemphMemE[c], needClip)
-		copy(in[c*(N+overlap):c*(N+overlap)+overlap], prefilterMem[(1+c)*CombFilterMaxPeriod-overlap:(1+c)*CombFilterMaxPeriod])
+		copy(
+			in[c*(N+overlap):c*(N+overlap)+overlap],
+			prefilterMem[(1+c)*CombFilterMaxPeriod-overlap:(1+c)*CombFilterMaxPeriod],
+		)
 	}
 
 	toneFreq = toneDetect(in, CC, N+overlap, &toneishness, mode.Fs, sc.tmp[:])
@@ -1678,20 +1842,47 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 		// real transients on vowels though (small SILK quantization
 		// offset value).
 		allowWeakTransients := hybrid && effectiveBytes < 15 && st.silkInfo.SignalType != 2
-		isTransient = transientAnalysis(in, N+overlap, CC, &tfEstimate, &tfChan, allowWeakTransients,
-			&weakTransient, toneFreq, toneishness, sc.tmp[:])
+		isTransient = transientAnalysis(
+			in,
+			N+overlap,
+			CC,
+			&tfEstimate,
+			&tfChan,
+			allowWeakTransients,
+			&weakTransient,
+			toneFreq,
+			toneishness,
+			sc.tmp[:],
+		)
 	}
 	toneishness = dsp.Min32(toneishness, 1-tfEstimate)
 	// Find pitch period and gain.
 	{
 		var qg int
-		enabled := ((e.lfe != 0 && nbAvailableBytes > 3) || nbAvailableBytes > 12*C) && !hybrid && !silence &&
-			tell+16 <= totalBits && !e.disablePF
+		enabled := ((e.lfe != 0 && nbAvailableBytes > 3) || nbAvailableBytes > 12*C) && !hybrid &&
+			!silence &&
+			tell+16 <= totalBits &&
+			!e.disablePF
 
 		prefilterTapset = st.tapsetDecision
-		pfOn = e.runPrefilter(in, CC, N, prefilterTapset, &pitchIndex, &gain1, &qg, enabled, e.complexity,
-			tfEstimate, nbAvailableBytes, &st.analysis, toneFreq, toneishness)
-		if (gain1 > .4 || st.prefilterGain > .4) && (st.analysis.Valid == 0 || float64(st.analysis.Tonality) > .3) &&
+		pfOn = e.runPrefilter(
+			in,
+			CC,
+			N,
+			prefilterTapset,
+			&pitchIndex,
+			&gain1,
+			&qg,
+			enabled,
+			e.complexity,
+			tfEstimate,
+			nbAvailableBytes,
+			&st.analysis,
+			toneFreq,
+			toneishness,
+		)
+		if (gain1 > .4 || st.prefilterGain > .4) &&
+			(st.analysis.Valid == 0 || float64(st.analysis.Tonality) > .3) &&
 			(float64(pitchIndex) > 1.26*float64(st.prefilterPeriod) || float64(pitchIndex) < .79*float64(st.prefilterPeriod)) {
 			pitchChange = true
 		}
@@ -1703,11 +1894,11 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 			// This block is not gated by a total bits check only because
 			// of the nbAvailableBytes check above.
 			enc.EncBitLogp(1, 1)
-			pitchIndex += 1
+			pitchIndex++
 			octave := entcode.Ilog(uint32(pitchIndex)) - 5
 			enc.EncUint(uint32(octave), 6)
 			enc.EncBits(uint32(pitchIndex-(16<<uint(octave))), uint(4+octave))
-			pitchIndex -= 1
+			pitchIndex--
 			enc.EncBits(uint32(qg), 3)
 			enc.EncIcdf(prefilterTapset, tapsetIcdf, 2)
 		}
@@ -1780,7 +1971,8 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 		diff = dsp.Max32(dsp.Min32(diff, .031), -.031)
 		// Find the band that's in the middle of the coded spectrum.
 		midband := 0
-		for midband = 0; eBands[midband+1] < eBands[maskEnd]/2; midband++ {
+		for eBands[midband+1] < eBands[maskEnd]/2 {
+			midband++
 		}
 		countDynalloc := 0
 		for i := 0; i < maskEnd; i++ {
@@ -1846,7 +2038,9 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 
 	// Last chance to catch any transient we might have missed in the
 	// time-domain analysis.
-	if LM > 0 && int32(enc.Tell())+3 <= totalBits && !isTransient && e.complexity >= 5 && e.lfe == 0 && !hybrid {
+	if LM > 0 && int32(enc.Tell())+3 <= totalBits && !isTransient && e.complexity >= 5 &&
+		e.lfe == 0 &&
+		!hybrid {
 		if patchTransientDecision(bandLogE, oldBandE, nbEBands, start, end, C) {
 			isTransient = true
 			shortBlocks = M
@@ -1872,22 +2066,57 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 	// Band normalisation.
 	normaliseBands(mode, freq, X, bandE, effEnd, C, M)
 
-	enableTfAnalysis = effectiveBytes >= 15*C && !hybrid && e.complexity >= 2 && e.lfe == 0 && toneishness < .98
+	enableTfAnalysis = effectiveBytes >= 15*C && !hybrid && e.complexity >= 2 && e.lfe == 0 &&
+		toneishness < .98
 
 	offsets := sc.offsets[:nbEBands]
 	importance := sc.importance[:nbEBands]
 	spreadWeight := sc.spreadWeight[:nbEBands]
 
-	maxDepth = dynallocAnalysis(bandLogE, bandLogE2, oldBandE, nbEBands, start, end, C, offsets,
-		e.lsbDepth, mode.LogN, isTransient, e.vbr, e.constrainedVBR,
-		eBands, LM, effectiveBytes, &totBoost, e.lfe != 0, surroundDynalloc, &st.analysis, importance, spreadWeight,
-		toneFreq, toneishness)
+	maxDepth = dynallocAnalysis(
+		bandLogE,
+		bandLogE2,
+		oldBandE,
+		nbEBands,
+		start,
+		end,
+		C,
+		offsets,
+		e.lsbDepth,
+		mode.LogN,
+		isTransient,
+		e.vbr,
+		e.constrainedVBR,
+		eBands,
+		LM,
+		effectiveBytes,
+		&totBoost,
+		e.lfe != 0,
+		surroundDynalloc,
+		&st.analysis,
+		importance,
+		spreadWeight,
+		toneFreq,
+		toneishness,
+	)
 
 	tfRes := sc.tfRes[:nbEBands]
 	// Disable variable tf resolution for hybrid and at very low bitrate.
 	if enableTfAnalysis {
 		lambda := max(80, 20480/effectiveBytes+2)
-		tfSelect = tfAnalysis(mode, effEnd, isTransient, tfRes, lambda, X, N, LM, tfEstimate, tfChan, importance)
+		tfSelect = tfAnalysis(
+			mode,
+			effEnd,
+			isTransient,
+			tfRes,
+			lambda,
+			X,
+			N,
+			LM,
+			tfEstimate,
+			tfChan,
+			importance,
+		)
 		for i := effEnd; i < end; i++ {
 			tfRes[i] = tfRes[effEnd-1]
 		}
@@ -1967,8 +2196,8 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 	if e.lfe != 0 {
 		offsets[0] = min(8, effectiveBytes/3)
 	}
-	cap := sc.cap[:nbEBands]
-	initCaps(mode, cap, LM, C)
+	caps := sc.cap[:nbEBands]
+	initCaps(mode, caps, LM, C)
 
 	dynallocLogp := 6
 	totalBits <<= bitRes
@@ -1982,7 +2211,7 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 		dynallocLoopLogp := dynallocLogp
 		boost := 0
 		j := 0
-		for j = 0; tell+int32(dynallocLoopLogp<<bitRes) < totalBits-totalBoost && boost < cap[i]; j++ {
+		for j = 0; tell+int32(dynallocLoopLogp<<bitRes) < totalBits-totalBoost && boost < caps[i]; j++ {
 			flag := j < offsets[i]
 			enc.EncBitLogp(b2i(flag), uint(dynallocLoopLogp))
 			tell = int32(enc.TellFrac())
@@ -2035,7 +2264,10 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 	// signal a redundant frame in hybrid mode. Creating a shorter packet
 	// would create an entropy coder desync.
 	if hybrid {
-		minAllowed = max(minAllowed, (tell0Frac+(37<<bitRes)+totalBoost+(1<<(bitRes+3))-1)>>(bitRes+3))
+		minAllowed = max(
+			minAllowed,
+			(tell0Frac+(37<<bitRes)+totalBoost+(1<<(bitRes+3))-1)>>(bitRes+3),
+		)
 	}
 	// Variable bitrate.
 	if vbrRate > 0 {
@@ -2123,7 +2355,15 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 		// Compute the offset we need to apply in order to reach the
 		// target.
 		if e.constrainedVBR != 0 {
-			st.vbrDrift += int32(truncInt(float64(float32(alpha * float32((delta*(1<<uint(lmDiff)))-st.vbrOffset-st.vbrDrift)))))
+			st.vbrDrift += int32(
+				truncInt(
+					float64(
+						float32(
+							alpha * float32((delta*(1<<uint(lmDiff)))-st.vbrOffset-st.vbrDrift),
+						),
+					),
+				),
+			)
 			st.vbrOffset = -st.vbrDrift
 		}
 
@@ -2172,9 +2412,27 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 	if e.lfe != 0 {
 		signalBandwidth = 1
 	}
-	codedBands = cltComputeAllocation(mode, start, end, offsets, cap,
-		allocTrim, &st.intensity, &dualStereo, bits, &balance, pulses,
-		fineQuant, finePriority, C, LM, rangeCoder{enc: enc}, true, st.lastCodedBands, signalBandwidth)
+	codedBands = cltComputeAllocation(
+		mode,
+		start,
+		end,
+		offsets,
+		caps,
+		allocTrim,
+		&st.intensity,
+		&dualStereo,
+		bits,
+		&balance,
+		pulses,
+		fineQuant,
+		finePriority,
+		C,
+		LM,
+		rangeCoder{enc: enc},
+		true,
+		st.lastCodedBands,
+		signalBandwidth,
+	)
 	if st.lastCodedBands != 0 {
 		st.lastCodedBands = min(st.lastCodedBands+1, max(st.lastCodedBands-1, codedBands))
 	} else {
@@ -2199,7 +2457,18 @@ func (e *Encoder) EncodeWithEC(pcm []float32, frameSize int, compressed []byte, 
 		antiCollapseOn = b2i(st.consecTransient < 2)
 		enc.EncBits(uint32(antiCollapseOn), 1)
 	}
-	quantEnergyFinalise(mode, start, end, oldBandE, errs, fineQuant, finePriority, nbCompressedBytes*8-enc.Tell(), enc, C)
+	quantEnergyFinalise(
+		mode,
+		start,
+		end,
+		oldBandE,
+		errs,
+		fineQuant,
+		finePriority,
+		nbCompressedBytes*8-enc.Tell(),
+		enc,
+		C,
+	)
 	for c := 0; c < C; c++ {
 		for i := start; i < end; i++ {
 			energyError[i+c*nbEBands] = dsp.Max32(-0.5, dsp.Min32(0.5, errs[i+c*nbEBands]))

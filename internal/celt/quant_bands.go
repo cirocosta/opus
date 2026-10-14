@@ -108,9 +108,13 @@ func lossDistortion(eBands, oldEBands []float32, start, end, length, C int) floa
 }
 
 // quantCoarseEnergyImpl is quant_coarse_energy_impl.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func quantCoarseEnergyImpl(m *Mode, start, end int, eBands, oldEBands []float32,
 	budget, tell int32, probModel []uint8, errs []float32, enc *entcode.Encoder,
-	C, LM int, intra bool, maxDecay float32, lfe bool) int {
+	C, LM int, intra bool, maxDecay float32, lfe bool,
+) int {
 	badness := 0
 	var prev [2]float32
 	var coef, beta float32
@@ -187,15 +191,26 @@ func quantCoarseEnergyImpl(m *Mode, start, end int, eBands, oldEBands []float32,
 }
 
 // quantCoarseEnergy is quant_coarse_energy.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func quantCoarseEnergy(m *Mode, start, end, effEnd int, eBands, oldEBands []float32, budget uint32,
 	errs []float32, enc *entcode.Encoder, C, LM, nbAvailableBytes int,
-	forceIntra bool, delayedIntra *float32, twoPass bool, lossRate int, lfe bool) {
+	forceIntra bool, delayedIntra *float32, twoPass bool, lossRate int, lfe bool,
+) {
 	var oldEBandsIntra, errorIntra [2 * maxBands]float32
 	var intraBits [1275]byte
 	badness1 := 0
 
-	intra := forceIntra || (!twoPass && *delayedIntra > float32(2*C*(end-start)) && nbAvailableBytes > (end-start)*C)
-	intraBias := int32(truncInt(float64(float32(float32(float32(budget)**delayedIntra)*float32(lossRate)) / float32(C*512))))
+	intra := forceIntra ||
+		(!twoPass && *delayedIntra > float32(2*C*(end-start)) && nbAvailableBytes > (end-start)*C)
+	intraBias := int32(
+		truncInt(
+			float64(
+				float32(float32(float32(budget)**delayedIntra)*float32(lossRate)) / float32(C*512),
+			),
+		),
+	)
 	newDistortion := lossDistortion(eBands, oldEBands, start, effEnd, m.NbEBands, C)
 
 	tell := uint32(enc.Tell())
@@ -238,7 +253,8 @@ func quantCoarseEnergy(m *Mode, start, end, effEnd int, eBands, oldEBands []floa
 		badness2 := quantCoarseEnergyImpl(m, start, end, eBands, oldEBands, int32(budget),
 			int32(tell), eProbModel[LM][b2i(intra)][:], errs, enc, C, LM, false, maxDecay, lfe)
 
-		if twoPass && (badness1 < badness2 || (badness1 == badness2 && int32(enc.TellFrac())+intraBias > tellIntra)) {
+		if twoPass &&
+			(badness1 < badness2 || (badness1 == badness2 && int32(enc.TellFrac())+intraBias > tellIntra)) {
 			*enc = encIntraState
 			// Copy intra bits to bit-stream.
 			copy(intraBuf[:saveBytes], intraBits[:saveBytes])
@@ -259,7 +275,17 @@ func quantCoarseEnergy(m *Mode, start, end, effEnd int, eBands, oldEBands []floa
 }
 
 // quantFineEnergy is quant_fine_energy. prevQuant may be nil.
-func quantFineEnergy(m *Mode, start, end int, oldEBands, errs []float32, prevQuant, extraQuant []int, enc *entcode.Encoder, C int) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func quantFineEnergy(
+	m *Mode,
+	start, end int,
+	oldEBands, errs []float32,
+	prevQuant, extraQuant []int,
+	enc *entcode.Encoder,
+	C int,
+) {
 	// Encode finer resolution.
 	for i := start; i < end; i++ {
 		extra := int16(1 << uint(extraQuant[i]))
@@ -274,7 +300,13 @@ func quantFineEnergy(m *Mode, start, end int, oldEBands, errs []float32, prevQua
 			prev = int16(prevQuant[i])
 		}
 		for c := 0; c < C; c++ {
-			q2 := floorInt(float32((float32(errs[i+c*m.NbEBands]*float32(int(1)<<uint(prev))) + .5) * float32(extra)))
+			q2 := floorInt(
+				float32(
+					(float32(errs[i+c*m.NbEBands]*float32(int(1)<<uint(prev))) + .5) * float32(
+						extra,
+					),
+				),
+			)
 			if q2 > int(extra)-1 {
 				q2 = int(extra) - 1
 			}
@@ -282,7 +314,9 @@ func quantFineEnergy(m *Mode, start, end int, oldEBands, errs []float32, prevQua
 				q2 = 0
 			}
 			enc.EncBits(uint32(q2), uint(extraQuant[i]))
-			offset := float32(float32((float32(q2)+.5)*float32(int(1)<<uint(14-extraQuant[i])))*(1.0/16384)) - .5
+			offset := float32(
+				float32((float32(q2)+.5)*float32(int(1)<<uint(14-extraQuant[i])))*(1.0/16384),
+			) - .5
 			offset = float32(offset * float32(float32(int(1)<<uint(14-int(prev)))*(1.0/16384)))
 			oldEBands[i+c*m.NbEBands] += offset
 			errs[i+c*m.NbEBands] -= offset
@@ -291,7 +325,18 @@ func quantFineEnergy(m *Mode, start, end int, oldEBands, errs []float32, prevQua
 }
 
 // quantEnergyFinalise is quant_energy_finalise.
-func quantEnergyFinalise(m *Mode, start, end int, oldEBands, errs []float32, fineQuant, finePriority []int, bitsLeft int, enc *entcode.Encoder, C int) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func quantEnergyFinalise(
+	m *Mode,
+	start, end int,
+	oldEBands, errs []float32,
+	fineQuant, finePriority []int,
+	bitsLeft int,
+	enc *entcode.Encoder,
+	C int,
+) {
 	// Use up the remaining bits.
 	for prio := 0; prio < 2; prio++ {
 		for i := start; i < end && bitsLeft >= C; i++ {
@@ -304,7 +349,11 @@ func quantEnergyFinalise(m *Mode, start, end int, oldEBands, errs []float32, fin
 					q2 = 0
 				}
 				enc.EncBits(uint32(q2), 1)
-				offset := float32(float32((float32(q2)-.5)*float32(int(1)<<uint(14-fineQuant[i]-1))) * (1.0 / 16384))
+				offset := float32(
+					float32(
+						(float32(q2)-.5)*float32(int(1)<<uint(14-fineQuant[i]-1)),
+					) * (1.0 / 16384),
+				)
 				if oldEBands != nil {
 					oldEBands[i+c*m.NbEBands] += offset
 				}
@@ -316,7 +365,14 @@ func quantEnergyFinalise(m *Mode, start, end int, oldEBands, errs []float32, fin
 }
 
 // unquantCoarseEnergy is unquant_coarse_energy.
-func unquantCoarseEnergy(m *Mode, start, end int, oldEBands []float32, intra bool, dec *entcode.Decoder, C, LM int) {
+func unquantCoarseEnergy(
+	m *Mode,
+	start, end int,
+	oldEBands []float32,
+	intra bool,
+	dec *entcode.Decoder,
+	C, LM int,
+) {
 	probModel := eProbModel[LM][b2i(intra)][:]
 	var prev [2]float32
 	var coef, beta float32
@@ -358,7 +414,14 @@ func unquantCoarseEnergy(m *Mode, start, end int, oldEBands []float32, intra boo
 }
 
 // unquantFineEnergy is unquant_fine_energy. prevQuant may be nil.
-func unquantFineEnergy(m *Mode, start, end int, oldEBands []float32, prevQuant, extraQuant []int, dec *entcode.Decoder, C int) {
+func unquantFineEnergy(
+	m *Mode,
+	start, end int,
+	oldEBands []float32,
+	prevQuant, extraQuant []int,
+	dec *entcode.Decoder,
+	C int,
+) {
 	// Decode finer resolution.
 	for i := start; i < end; i++ {
 		extra := int16(extraQuant[i])
@@ -374,7 +437,9 @@ func unquantFineEnergy(m *Mode, start, end int, oldEBands []float32, prevQuant, 
 		}
 		for c := 0; c < C; c++ {
 			q2 := int(dec.DecBits(uint(extra)))
-			offset := float32(float32((float32(q2)+.5)*float32(int(1)<<uint(14-int(extra))))*(1.0/16384)) - .5
+			offset := float32(
+				float32((float32(q2)+.5)*float32(int(1)<<uint(14-int(extra))))*(1.0/16384),
+			) - .5
 			offset = float32(offset * float32(float32(int(1)<<uint(14-int(prev)))*(1.0/16384)))
 			oldEBands[i+c*m.NbEBands] += offset
 		}
@@ -382,7 +447,18 @@ func unquantFineEnergy(m *Mode, start, end int, oldEBands []float32, prevQuant, 
 }
 
 // unquantEnergyFinalise is unquant_energy_finalise. oldEBands may be nil.
-func unquantEnergyFinalise(m *Mode, start, end int, oldEBands []float32, fineQuant, finePriority []int, bitsLeft int, dec *entcode.Decoder, C int) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func unquantEnergyFinalise(
+	m *Mode,
+	start, end int,
+	oldEBands []float32,
+	fineQuant, finePriority []int,
+	bitsLeft int,
+	dec *entcode.Decoder,
+	C int,
+) {
 	// Use up the remaining bits.
 	for prio := 0; prio < 2; prio++ {
 		for i := start; i < end && bitsLeft >= C; i++ {
@@ -391,7 +467,11 @@ func unquantEnergyFinalise(m *Mode, start, end int, oldEBands []float32, fineQua
 			}
 			for c := 0; c < C; c++ {
 				q2 := int(dec.DecBits(1))
-				offset := float32(float32((float32(q2)-.5)*float32(int(1)<<uint(14-fineQuant[i]-1))) * (1.0 / 16384))
+				offset := float32(
+					float32(
+						(float32(q2)-.5)*float32(int(1)<<uint(14-fineQuant[i]-1)),
+					) * (1.0 / 16384),
+				)
 				if oldEBands != nil {
 					oldEBands[i+c*m.NbEBands] += offset
 				}

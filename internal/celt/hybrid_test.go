@@ -46,23 +46,29 @@ func TestHybridReplay(t *testing.T) {
 	var logs []replayLog
 	committed, _ := filepath.Glob(filepath.Join("testdata", "hybrid_v??*.log.gz"))
 	for _, p := range committed {
-		logs = append(logs, replayLog{strings.TrimPrefix(filepath.Base(p), "hybrid_"), func() ([]byte, error) {
-			f, err := os.Open(p)
-			if err != nil {
-				return nil, err
-			}
-			defer f.Close()
-			zr, err := gzip.NewReader(f)
-			if err != nil {
-				return nil, err
-			}
-			return io.ReadAll(zr)
-		}})
+		logs = append(
+			logs,
+			replayLog{strings.TrimPrefix(filepath.Base(p), "hybrid_"), func() ([]byte, error) {
+				f, err := os.Open(p)
+				if err != nil {
+					return nil, err
+				}
+				defer func() { _ = f.Close() }()
+				zr, err := gzip.NewReader(f)
+				if err != nil {
+					return nil, err
+				}
+				return io.ReadAll(zr)
+			}},
+		)
 	}
 	if dir := os.Getenv("CELT_HYBRID_LOGS"); dir != "" {
 		extra, _ := filepath.Glob(filepath.Join(dir, "v??*.log"))
 		for _, p := range extra {
-			logs = append(logs, replayLog{filepath.Base(p), func() ([]byte, error) { return os.ReadFile(p) }})
+			logs = append(
+				logs,
+				replayLog{filepath.Base(p), func() ([]byte, error) { return os.ReadFile(p) }},
+			)
 		}
 	}
 	for _, lg := range logs {

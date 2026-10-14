@@ -72,11 +72,6 @@ type SILKInfo struct {
 	Offset     int
 }
 
-// bitsToBitrate is bits_to_bitrate.
-func bitsToBitrate(bits, fs, frameSize int32) int32 {
-	return bits * (6 * fs / frameSize) / 6
-}
-
 // bitrateToBits is bitrate_to_bits.
 func bitrateToBits(bitrate, fs, frameSize int32) int32 {
 	return bitrate * 6 / (6 * fs / frameSize)
@@ -145,8 +140,12 @@ var combGains = [3][3]float32{
 // combFilter is comb_filter. y[yo:] receives N samples; x[xo:] is the
 // input, with at least max(T0, T1)+2 samples of history before xo. x and
 // y may be the same buffer at the same offset (in-place filtering).
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func combFilter(y []float32, yo int, x []float32, xo int, T0, T1, N int,
-	g0, g1 float32, tapset0, tapset1 int, window []float32, overlap int) {
+	g0, g1 float32, tapset0, tapset1 int, window []float32, overlap int,
+) {
 	inPlace := sameElem(y, yo, x, xo)
 	if g0 == 0 && g1 == 0 {
 		if !inPlace {
@@ -210,10 +209,10 @@ func sameElem(a []float32, ao int, b []float32, bo int) bool {
 }
 
 // initCaps is init_caps.
-func initCaps(m *Mode, cap []int, LM, C int) {
+func initCaps(m *Mode, caps []int, LM, C int) {
 	for i := 0; i < m.NbEBands; i++ {
 		N := int(m.EBands[i+1]-m.EBands[i]) << uint(LM)
-		cap[i] = (int(m.Cache.Caps[m.NbEBands*(2*LM+C-1)+i]) + 64) * C * N >> 2
+		caps[i] = (int(m.Cache.Caps[m.NbEBands*(2*LM+C-1)+i]) + 64) * C * N >> 2
 	}
 }
 

@@ -272,7 +272,18 @@ func deemphasisStereoSimple(in [2][]float32, pcm []float32, N int, coef0 float32
 }
 
 // deemphasis is deemphasis.
-func deemphasis(in [2][]float32, pcm []float32, N, C, downsample int, coef []float32, mem []float32, accum bool, scratch []float32) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func deemphasis(
+	in [2][]float32,
+	pcm []float32,
+	N, C, downsample int,
+	coef []float32,
+	mem []float32,
+	accum bool,
+	scratch []float32,
+) {
 	// Short version for common case.
 	if downsample == 1 && C == 2 && !accum {
 		deemphasisStereoSimple(in, pcm, N, coef[0], mem)
@@ -324,8 +335,20 @@ func deemphasis(in [2][]float32, pcm []float32, N, C, downsample int, coef []flo
 }
 
 // celtSynthesis is celt_synthesis. outSyn[c] is out_syn[c].
-func celtSynthesis(mode *Mode, X []float32, outSyn [2][]float32, oldBandE []float32, start, effEnd, C, CC int,
-	isTransient bool, LM, downsample int, silence bool, freqBuf []float32) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func celtSynthesis(
+	mode *Mode,
+	X []float32,
+	outSyn [2][]float32,
+	oldBandE []float32,
+	start, effEnd, C, CC int,
+	isTransient bool,
+	LM, downsample int,
+	silence bool,
+	freqBuf []float32,
+) {
 	overlap := mode.Overlap
 	nbEBands := mode.NbEBands
 	N := mode.ShortMdctSize << uint(LM)
@@ -351,29 +374,81 @@ func celtSynthesis(mode *Mode, X []float32, outSyn [2][]float32, oldBandE []floa
 		freq2 := outSyn[1][overlap/2:]
 		copy(freq2[:N], freq)
 		for b := 0; b < B; b++ {
-			dsp.CltMDCTBackward(mode.MDCT, freq2[b:], outSyn[0][NB*b:], mode.Window, overlap, shift, B)
+			dsp.CltMDCTBackward(
+				mode.MDCT,
+				freq2[b:],
+				outSyn[0][NB*b:],
+				mode.Window,
+				overlap,
+				shift,
+				B,
+			)
 		}
 		for b := 0; b < B; b++ {
-			dsp.CltMDCTBackward(mode.MDCT, freq[b:], outSyn[1][NB*b:], mode.Window, overlap, shift, B)
+			dsp.CltMDCTBackward(
+				mode.MDCT,
+				freq[b:],
+				outSyn[1][NB*b:],
+				mode.Window,
+				overlap,
+				shift,
+				B,
+			)
 		}
 	} else if CC == 1 && C == 2 {
 		// Downmixing a stereo stream to mono.
 		freq2 := outSyn[0][overlap/2:]
 		denormaliseBands(mode, X, freq, oldBandE, start, effEnd, M, downsample, silence)
 		// Use the output buffer as temp array before downmixing.
-		denormaliseBands(mode, X[N:], freq2, oldBandE[nbEBands:], start, effEnd, M, downsample, silence)
+		denormaliseBands(
+			mode,
+			X[N:],
+			freq2,
+			oldBandE[nbEBands:],
+			start,
+			effEnd,
+			M,
+			downsample,
+			silence,
+		)
 		for i := 0; i < N; i++ {
 			freq[i] = float32(.5*freq[i]) + float32(.5*freq2[i])
 		}
 		for b := 0; b < B; b++ {
-			dsp.CltMDCTBackward(mode.MDCT, freq[b:], outSyn[0][NB*b:], mode.Window, overlap, shift, B)
+			dsp.CltMDCTBackward(
+				mode.MDCT,
+				freq[b:],
+				outSyn[0][NB*b:],
+				mode.Window,
+				overlap,
+				shift,
+				B,
+			)
 		}
 	} else {
 		// Normal case (mono or stereo).
 		for c := 0; c < CC; c++ {
-			denormaliseBands(mode, X[c*N:], freq, oldBandE[c*nbEBands:], start, effEnd, M, downsample, silence)
+			denormaliseBands(
+				mode,
+				X[c*N:],
+				freq,
+				oldBandE[c*nbEBands:],
+				start,
+				effEnd,
+				M,
+				downsample,
+				silence,
+			)
 			for b := 0; b < B; b++ {
-				dsp.CltMDCTBackward(mode.MDCT, freq[b:], outSyn[c][NB*b:], mode.Window, overlap, shift, B)
+				dsp.CltMDCTBackward(
+					mode.MDCT,
+					freq[b:],
+					outSyn[c][NB*b:],
+					mode.Window,
+					overlap,
+					shift,
+					B,
+				)
 			}
 		}
 	}
@@ -397,6 +472,10 @@ func tfDecode(start, end int, isTransient bool, tfRes []int, LM int, dec *entcod
 	budget -= uint32(tfSelectRsv)
 	tfChanged := 0
 	curr := 0
+	nextLogp := uint32(5)
+	if isTransient {
+		nextLogp = 4
+	}
 	for i := start; i < end; i++ {
 		if tell+logp <= budget {
 			curr ^= dec.DecBitLogp(uint(logp))
@@ -404,11 +483,7 @@ func tfDecode(start, end int, isTransient bool, tfRes []int, LM int, dec *entcod
 			tfChanged |= curr
 		}
 		tfRes[i] = curr
-		if isTransient {
-			logp = 4
-		} else {
-			logp = 5
-		}
+		logp = nextLogp
 	}
 	tfSelect := 0
 	it := 4 * b2i(isTransient)
@@ -465,6 +540,9 @@ var plcLagWindow = func() float32 {
 }()
 
 // decodeLost is celt_decode_lost.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func (d *Decoder) decodeLost(N, LM int) {
 	C := d.channels
 	var decodeMem, outSyn [2][]float32
@@ -497,7 +575,10 @@ func (d *Decoder) decodeLost(N, LM int) {
 		effEnd := max(start, min(end, mode.EffEBands))
 
 		for c := 0; c < C; c++ {
-			copy(decodeMem[c][:decodeBufferSize-N+overlap], decodeMem[c][N:N+decodeBufferSize-N+overlap])
+			copy(
+				decodeMem[c][:decodeBufferSize-N+overlap],
+				decodeMem[c][N:N+decodeBufferSize-N+overlap],
+			)
 		}
 
 		if st.prefilterAndFold {
@@ -511,7 +592,10 @@ func (d *Decoder) decodeLost(N, LM int) {
 		}
 		for c := 0; c < C; c++ {
 			for i := start; i < end; i++ {
-				oldBandE[c*nbEBands+i] = dsp.Max32(backgroundLogE[c*nbEBands+i], oldBandE[c*nbEBands+i]-decay)
+				oldBandE[c*nbEBands+i] = dsp.Max32(
+					backgroundLogE[c*nbEBands+i],
+					oldBandE[c*nbEBands+i]-decay,
+				)
 			}
 		}
 		seed := st.rng
@@ -528,21 +612,59 @@ func (d *Decoder) decodeLost(N, LM int) {
 		}
 		st.rng = seed
 
-		celtSynthesis(mode, X, outSyn, oldBandE, start, effEnd, C, C, false, LM, d.downsample, false, d.scratch.freq[:])
+		celtSynthesis(
+			mode,
+			X,
+			outSyn,
+			oldBandE,
+			start,
+			effEnd,
+			C,
+			C,
+			false,
+			LM,
+			d.downsample,
+			false,
+			d.scratch.freq[:],
+		)
 
 		// Run the postfilter with the last parameters.
 		for c := 0; c < C; c++ {
 			st.postfilterPeriod = max(st.postfilterPeriod, CombFilterMinPeriod)
 			st.postfilterPeriodOld = max(st.postfilterPeriodOld, CombFilterMinPeriod)
 			os := decodeBufferSize - N
-			combFilter(decodeMem[c], os, decodeMem[c], os, st.postfilterPeriodOld, st.postfilterPeriod, mode.ShortMdctSize,
-				st.postfilterGainOld, st.postfilterGain, st.postfilterTapsetOld, st.postfilterTapset,
-				mode.Window, overlap)
+			combFilter(
+				decodeMem[c],
+				os,
+				decodeMem[c],
+				os,
+				st.postfilterPeriodOld,
+				st.postfilterPeriod,
+				mode.ShortMdctSize,
+				st.postfilterGainOld,
+				st.postfilterGain,
+				st.postfilterTapsetOld,
+				st.postfilterTapset,
+				mode.Window,
+				overlap,
+			)
 			if LM != 0 {
 				os += mode.ShortMdctSize
-				combFilter(decodeMem[c], os, decodeMem[c], os, st.postfilterPeriod, st.postfilterPeriod, N-mode.ShortMdctSize,
-					st.postfilterGain, st.postfilterGain, st.postfilterTapset, st.postfilterTapset,
-					mode.Window, overlap)
+				combFilter(
+					decodeMem[c],
+					os,
+					decodeMem[c],
+					os,
+					st.postfilterPeriod,
+					st.postfilterPeriod,
+					N-mode.ShortMdctSize,
+					st.postfilterGain,
+					st.postfilterGain,
+					st.postfilterTapset,
+					st.postfilterTapset,
+					mode.Window,
+					overlap,
+				)
 			}
 		}
 		st.postfilterPeriodOld = st.postfilterPeriod
@@ -602,7 +724,13 @@ func (d *Decoder) decodeLost(N, LM int) {
 			// excitation. Compute the excitation for exc_length samples
 			// before the loss. We need the copy because celt_fir() cannot
 			// filter in-place.
-			dsp.CeltFIR(excBuf[maxPeriod-excLength:], lpc[c*dsp.CeltLPCOrder:], firTmp, excLength, dsp.CeltLPCOrder)
+			dsp.CeltFIR(
+				excBuf[maxPeriod-excLength:],
+				lpc[c*dsp.CeltLPCOrder:],
+				firTmp,
+				excLength,
+				dsp.CeltLPCOrder,
+			)
 			copy(exc[maxPeriod-excLength:maxPeriod], firTmp)
 
 			// Check if the waveform is decaying, and if so how fast. We do
@@ -659,8 +787,14 @@ func (d *Decoder) decodeLost(N, LM int) {
 				}
 				// Apply the synthesis filter to convert the excitation back
 				// into the signal domain.
-				dsp.CeltIIR(buf[decodeBufferSize-N:], lpc[c*dsp.CeltLPCOrder:], buf[decodeBufferSize-N:],
-					extrapolationLen, dsp.CeltLPCOrder, lpcMem[:])
+				dsp.CeltIIR(
+					buf[decodeBufferSize-N:],
+					lpc[c*dsp.CeltLPCOrder:],
+					buf[decodeBufferSize-N:],
+					extrapolationLen,
+					dsp.CeltLPCOrder,
+					lpcMem[:],
+				)
 			}
 
 			// Check if the synthesis energy is higher than expected, which
@@ -712,7 +846,16 @@ func (d *Decoder) decodeLost(N, LM int) {
 // dec is nil, the decoder reads data with its own range decoder;
 // otherwise dec must already be initialized on data (hybrid mode, after
 // SILK) and len(data) is the size of the whole packet payload.
-func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *entcode.Decoder, accum bool) int {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func (d *Decoder) DecodeWithEC(
+	data []byte,
+	pcm []float32,
+	frameSize int,
+	dec *entcode.Decoder,
+	accum bool,
+) int {
 	st := &d.st
 	CC := d.channels
 	C := d.streamChannels
@@ -759,7 +902,17 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 
 	if data == nil || length <= 1 {
 		d.decodeLost(N, LM)
-		deemphasis(outSyn, pcm, N, CC, d.downsample, mode.Preemph[:], st.preemphMemD[:], accum, d.scratch.deemph[:])
+		deemphasis(
+			outSyn,
+			pcm,
+			N,
+			CC,
+			d.downsample,
+			mode.Preemph[:],
+			st.preemphMemD[:],
+			accum,
+			d.scratch.deemph[:],
+		)
 		return frameSize / d.downsample
 	}
 	// Check if there are at least two packets received consecutively
@@ -829,13 +982,17 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 		for c := 0; c < 2; c++ {
 			var safety float32
 			missing := min(10, st.lossDuration>>uint(LM))
-			if LM == 0 {
+			switch LM {
+			case 0:
 				safety = 1.5
-			} else if LM == 1 {
+			case 1:
 				safety = .5
 			}
 			for i := start; i < end; i++ {
-				if oldBandE[c*nbEBands+i] < dsp.Max32(oldLogE[c*nbEBands+i], oldLogE2[c*nbEBands+i]) {
+				if oldBandE[c*nbEBands+i] < dsp.Max32(
+					oldLogE[c*nbEBands+i],
+					oldLogE2[c*nbEBands+i],
+				) {
 					// If energy is going down already, continue the trend.
 					E0 := oldBandE[c*nbEBands+i]
 					E1 := oldLogE[c*nbEBands+i]
@@ -846,7 +1003,10 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 					oldBandE[c*nbEBands+i] = dsp.Max32(-20, E0)
 				} else {
 					// Otherwise take the min of the last frames.
-					oldBandE[c*nbEBands+i] = dsp.Min32(dsp.Min32(oldBandE[c*nbEBands+i], oldLogE[c*nbEBands+i]), oldLogE2[c*nbEBands+i])
+					oldBandE[c*nbEBands+i] = dsp.Min32(
+						dsp.Min32(oldBandE[c*nbEBands+i], oldLogE[c*nbEBands+i]),
+						oldLogE2[c*nbEBands+i],
+					)
 				}
 				// Shorter frames have more natural fluctuations -- play it
 				// safe.
@@ -866,8 +1026,8 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 		spreadDecision = dec.DecIcdf(spreadIcdf, 5)
 	}
 
-	cap := d.scratch.cap[:nbEBands]
-	initCaps(mode, cap, LM, C)
+	caps := d.scratch.cap[:nbEBands]
+	initCaps(mode, caps, LM, C)
 
 	offsets := d.scratch.offsets[:nbEBands]
 
@@ -881,7 +1041,7 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 		quanta := min(width<<bitRes, max(6<<bitRes, width))
 		dynallocLoopLogp := dynallocLogp
 		boost := 0
-		for tell+int32(dynallocLoopLogp<<bitRes) < totalBits && boost < cap[i] {
+		for tell+int32(dynallocLoopLogp<<bitRes) < totalBits && boost < caps[i] {
 			flag := dec.DecBitLogp(uint(dynallocLoopLogp))
 			tell = int32(dec.TellFrac())
 			if flag == 0 {
@@ -917,7 +1077,7 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 	var intensity, dualStereo int
 	var balance int32
 	rc := rangeCoder{dec: dec}
-	codedBands := cltComputeAllocation(mode, start, end, offsets, cap,
+	codedBands := cltComputeAllocation(mode, start, end, offsets, caps,
 		allocTrim, &intensity, &dualStereo, bits, &balance, pulses,
 		fineQuant, finePriority, C, LM, rc, false, 0, 0)
 
@@ -967,14 +1127,38 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 		st.postfilterPeriod = max(st.postfilterPeriod, CombFilterMinPeriod)
 		st.postfilterPeriodOld = max(st.postfilterPeriodOld, CombFilterMinPeriod)
 		os := decodeBufferSize - N
-		combFilter(decodeMem[c], os, decodeMem[c], os, st.postfilterPeriodOld, st.postfilterPeriod, mode.ShortMdctSize,
-			st.postfilterGainOld, st.postfilterGain, st.postfilterTapsetOld, st.postfilterTapset,
-			mode.Window, overlap)
+		combFilter(
+			decodeMem[c],
+			os,
+			decodeMem[c],
+			os,
+			st.postfilterPeriodOld,
+			st.postfilterPeriod,
+			mode.ShortMdctSize,
+			st.postfilterGainOld,
+			st.postfilterGain,
+			st.postfilterTapsetOld,
+			st.postfilterTapset,
+			mode.Window,
+			overlap,
+		)
 		if LM != 0 {
 			os += mode.ShortMdctSize
-			combFilter(decodeMem[c], os, decodeMem[c], os, st.postfilterPeriod, postfilterPitch, N-mode.ShortMdctSize,
-				st.postfilterGain, postfilterGain, st.postfilterTapset, postfilterTapset,
-				mode.Window, overlap)
+			combFilter(
+				decodeMem[c],
+				os,
+				decodeMem[c],
+				os,
+				st.postfilterPeriod,
+				postfilterPitch,
+				N-mode.ShortMdctSize,
+				st.postfilterGain,
+				postfilterGain,
+				st.postfilterTapset,
+				postfilterTapset,
+				mode.Window,
+				overlap,
+			)
 		}
 	}
 	st.postfilterPeriodOld = st.postfilterPeriod
@@ -1023,7 +1207,17 @@ func (d *Decoder) DecodeWithEC(data []byte, pcm []float32, frameSize int, dec *e
 	}
 	st.rng = dec.Rng
 
-	deemphasis(outSyn, pcm, N, CC, d.downsample, mode.Preemph[:], st.preemphMemD[:], accum, d.scratch.deemph[:])
+	deemphasis(
+		outSyn,
+		pcm,
+		N,
+		CC,
+		d.downsample,
+		mode.Preemph[:],
+		st.preemphMemD[:],
+		accum,
+		d.scratch.deemph[:],
+	)
 	st.lossDuration = 0
 	st.plcDuration = 0
 	st.lastFrameType = frameNormal

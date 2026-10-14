@@ -36,7 +36,14 @@ func celtLCGRand(seed uint32) uint32 {
 func bitexactCos(x int16) int16 {
 	tmp := (4096 + int32(x)*int32(x)) >> 13
 	x2 := int16(tmp)
-	x2 = int16(int32(32767-x2) + dsp.FracMul16(int32(x2), -7651+dsp.FracMul16(int32(x2), 8277+dsp.FracMul16(-626, int32(x2)))))
+	x2 = int16(
+		int32(
+			32767-x2,
+		) + dsp.FracMul16(
+			int32(x2),
+			-7651+dsp.FracMul16(int32(x2), 8277+dsp.FracMul16(-626, int32(x2))),
+		),
+	)
 	return int16(1 + int32(x2))
 }
 
@@ -83,7 +90,14 @@ func normaliseBands(m *Mode, freq []float32, X []float32, bandE []float32, end, 
 
 // denormaliseBands is denormalise_bands: it de-normalises the energy to
 // produce the synthesis from the unit-energy bands.
-func denormaliseBands(m *Mode, X []float32, freq []float32, bandLogE []float32, start, end, M, downsample int, silence bool) {
+func denormaliseBands(
+	m *Mode,
+	X []float32,
+	freq []float32,
+	bandLogE []float32,
+	start, end, M, downsample int,
+	silence bool,
+) {
 	eBands := m.EBands
 	N := M * m.ShortMdctSize
 	bound := M * int(eBands[end])
@@ -95,16 +109,9 @@ func denormaliseBands(m *Mode, X []float32, freq []float32, bandLogE []float32, 
 		start = 0
 		end = 0
 	}
-	f := 0
-	x := M * int(eBands[start])
-	if start != 0 {
-		for i := 0; i < M*int(eBands[start]); i++ {
-			freq[f] = 0
-			f++
-		}
-	} else {
-		f += M * int(eBands[start])
-	}
+	f := M * int(eBands[start])
+	x := f
+	clear(freq[:f])
 	for i := start; i < end; i++ {
 		j := M * int(eBands[i])
 		bandEnd := M * int(eBands[i+1])
@@ -125,8 +132,12 @@ func denormaliseBands(m *Mode, X []float32, freq []float32, bandLogE []float32, 
 
 // antiCollapse is anti_collapse: it prevents energy collapse for
 // transients with multiple short MDCTs.
-func antiCollapse(m *Mode, X_ []float32, collapseMasks []uint8, LM, C, size, start, end int,
-	logE, prev1logE, prev2logE []float32, pulses []int, seed uint32, encode bool) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func antiCollapse(m *Mode, inputX []float32, collapseMasks []uint8, LM, C, size, start, end int,
+	logE, prev1logE, prev2logE []float32, pulses []int, seed uint32, encode bool,
+) {
 	for i := start; i < end; i++ {
 		N0 := int(m.EBands[i+1] - m.EBands[i])
 		// depth in 1/8 bits
@@ -154,7 +165,7 @@ func antiCollapse(m *Mode, X_ []float32, collapseMasks []uint8, LM, C, size, sta
 			}
 			r = dsp.Min16(thresh, r)
 			r = float32(r * sqrt1)
-			X := X_[c*size+int(m.EBands[i])<<uint(LM):]
+			X := inputX[c*size+int(m.EBands[i])<<uint(LM):]
 			for k := 0; k < 1<<uint(LM); k++ {
 				// Detect collapse.
 				if collapseMasks[i*C+c]&(1<<uint(k)) == 0 {
@@ -243,8 +254,12 @@ func stereoMerge(X, Y []float32, mid float32, N int) {
 
 // spreadingDecision is spreading_decision: it decides whether we should
 // spread the pulses in the current frame.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func spreadingDecision(m *Mode, X []float32, average *int, lastDecision int, hfAverage *int,
-	tapsetDecision *int, updateHF bool, end, C, M int, spreadWeight []int) int {
+	tapsetDecision *int, updateHF bool, end, C, M int, spreadWeight []int,
+) int {
 	sum := 0
 	nbBands := 0
 	eBands := m.EBands
@@ -293,9 +308,10 @@ func spreadingDecision(m *Mode, X []float32, average *int, lastDecision int, hfA
 		}
 		*hfAverage = (*hfAverage + hfSum) >> 1
 		hfSum = *hfAverage
-		if *tapsetDecision == 2 {
+		switch *tapsetDecision {
+		case 2:
 			hfSum += 4
-		} else if *tapsetDecision == 0 {
+		case 0:
 			hfSum -= 4
 		}
 		if hfSum > 22 {
@@ -347,11 +363,12 @@ func deinterleaveHadamard(X []float32, N0, stride int, hadamard bool) {
 				tmp[ordery[i]*N0+j] = X[j*stride+i]
 			}
 		}
-	} else {
-		for i := 0; i < stride; i++ {
-			for j := 0; j < N0; j++ {
-				tmp[i*N0+j] = X[j*stride+i]
-			}
+		copy(X[:N], tmp)
+		return
+	}
+	for i := 0; i < stride; i++ {
+		for j := 0; j < N0; j++ {
+			tmp[i*N0+j] = X[j*stride+i]
 		}
 	}
 	copy(X[:N], tmp)
@@ -369,11 +386,12 @@ func interleaveHadamard(X []float32, N0, stride int, hadamard bool) {
 				tmp[j*stride+i] = X[ordery[i]*N0+j]
 			}
 		}
-	} else {
-		for i := 0; i < stride; i++ {
-			for j := 0; j < N0; j++ {
-				tmp[j*stride+i] = X[i*N0+j]
-			}
+		copy(X[:N], tmp)
+		return
+	}
+	for i := 0; i < stride; i++ {
+		for j := 0; j < N0; j++ {
+			tmp[j*stride+i] = X[i*N0+j]
 		}
 	}
 	copy(X[:N], tmp)
@@ -448,7 +466,19 @@ type splitCtx struct {
 }
 
 // computeTheta is compute_theta.
-func computeTheta(ctx *bandCtx, sctx *splitCtx, X, Y []float32, N int, b *int, B, B0, LM int, stereo bool, fill *int) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func computeTheta(
+	ctx *bandCtx,
+	sctx *splitCtx,
+	X, Y []float32,
+	N int,
+	b *int,
+	B, B0, LM int,
+	stereo bool,
+	fill *int,
+) {
 	itheta := 0
 	var delta, imid, iside int
 	inv := false
@@ -557,7 +587,7 @@ func computeTheta(ctx *bandCtx, sctx *splitCtx, X, Y []float32, N int, b *int, B
 				itheta = int(ec.dec.DecUint(uint32(qn + 1)))
 			}
 		} else {
-			fs := 1
+			var fs int
 			ft := ((qn >> 1) + 1) * ((qn >> 1) + 1)
 			if encode {
 				var fl int
@@ -625,17 +655,18 @@ func computeTheta(ctx *bandCtx, sctx *splitCtx, X, Y []float32, N int, b *int, B
 	qalloc := ec.tellFrac() - tell
 	*b -= qalloc
 
-	if itheta == 0 {
+	switch itheta {
+	case 0:
 		imid = 32767
 		iside = 0
 		*fill &= (1 << uint(B)) - 1
 		delta = -16384
-	} else if itheta == 16384 {
+	case 16384:
 		imid = 0
 		iside = 32767
 		*fill &= ((1 << uint(B)) - 1) << uint(B)
 		delta = 16384
-	} else {
+	default:
 		imid = int(bitexactCos(int16(itheta)))
 		iside = int(bitexactCos(int16(16384 - itheta)))
 		// This is the mid vs side allocation that minimizes squared error
@@ -652,6 +683,9 @@ func computeTheta(ctx *bandCtx, sctx *splitCtx, X, Y []float32, N int, b *int, B
 }
 
 // quantBandN1 is quant_band_n1. Y is nil for mono.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func quantBandN1(ctx *bandCtx, X, Y []float32, lowbandOut []float32) uint {
 	encode := ctx.encode
 	ec := ctx.ec
@@ -688,7 +722,18 @@ func quantBandN1(ctx *bandCtx, X, Y []float32, lowbandOut []float32) uint {
 // partition. It can split the band in two and transmit the energy
 // difference with the two half-bands. It can be called recursively so
 // bands can end up being split in 8 parts. lowband may be nil.
-func quantPartition(ctx *bandCtx, X []float32, N, b, B int, lowband []float32, LM int, gain float32, fill int) uint {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func quantPartition(
+	ctx *bandCtx,
+	X []float32,
+	N, b, B int,
+	lowband []float32,
+	LM int,
+	gain float32,
+	fill int,
+) uint {
 	B0 := B
 	var cm uint
 	encode := ctx.encode
@@ -747,9 +792,33 @@ func quantPartition(ctx *bandCtx, X []float32, N, b, B int, lowband []float32, L
 			if rebalance > 3<<bitRes && itheta != 0 {
 				sbits += int(rebalance) - (3 << bitRes)
 			}
-			cm |= quantPartition(ctx, Y, N, sbits, B, nextLowband2, LM, float32(gain*side), fill>>uint(B)) << uint(B0>>1)
+			cm |= quantPartition(
+				ctx,
+				Y,
+				N,
+				sbits,
+				B,
+				nextLowband2,
+				LM,
+				float32(gain*side),
+				fill>>uint(B),
+			) << uint(
+				B0>>1,
+			)
 		} else {
-			cm = quantPartition(ctx, Y, N, sbits, B, nextLowband2, LM, float32(gain*side), fill>>uint(B)) << uint(B0>>1)
+			cm = quantPartition(
+				ctx,
+				Y,
+				N,
+				sbits,
+				B,
+				nextLowband2,
+				LM,
+				float32(gain*side),
+				fill>>uint(B),
+			) << uint(
+				B0>>1,
+			)
 			rebalance = int32(sbits) - (rebalance - ctx.remainingBits)
 			if rebalance > 3<<bitRes && itheta != 16384 {
 				mbits += int(rebalance) - (3 << bitRes)
@@ -827,8 +896,12 @@ var bitDeinterleaveTable = [16]uint8{
 
 // quantBand is quant_band: it encodes or decodes a band for the mono
 // case. lowband, lowbandOut and lowbandScratch may be nil.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func quantBand(ctx *bandCtx, X []float32, N, b, B int, lowband []float32, LM int,
-	lowbandOut []float32, gain float32, lowbandScratch []float32, fill int) uint {
+	lowbandOut []float32, gain float32, lowbandScratch []float32, fill int,
+) uint {
 	N0 := N
 	NB := N
 	B0 := B
@@ -852,7 +925,8 @@ func quantBand(ctx *bandCtx, X []float32, N, b, B int, lowband []float32, LM int
 	}
 	// Band recombining to increase frequency resolution.
 
-	if lowbandScratch != nil && lowband != nil && (recombine != 0 || ((NB&1) == 0 && tfChange < 0) || B0 > 1) {
+	if lowbandScratch != nil && lowband != nil &&
+		(recombine != 0 || ((NB&1) == 0 && tfChange < 0) || B0 > 1) {
 		copy(lowbandScratch[:N], lowband[:N])
 		lowband = lowbandScratch
 	}
@@ -939,8 +1013,12 @@ const minStereoEnergy = 1e-10
 
 // quantBandStereo is quant_band_stereo: it encodes or decodes a band for
 // the stereo case.
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
 func quantBandStereo(ctx *bandCtx, X, Y []float32, N, b, B int, lowband []float32, LM int,
-	lowbandOut []float32, lowbandScratch []float32, fill int) uint {
+	lowbandOut []float32, lowbandScratch []float32, fill int,
+) uint {
 	var cm uint
 	var sctx splitCtx
 	encode := ctx.encode
@@ -1092,10 +1170,29 @@ const quantAllBandsMaxNorm = 2 * 8 * 78
 // unquantisation (decode) of the residual spectrum. Y is nil for mono.
 // When encoding, ec.enc is set and bandE holds the band amplitudes; when
 // decoding, ec.dec is set and bandE may be nil.
-func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, collapseMasks []uint8,
-	bandE []float32, pulses []int, shortBlocks bool, spread int, dualStereo bool, intensity int,
-	tfRes []int, totalBits, balance int32, ec rangeCoder, LM, codedBands int, seed *uint32,
-	complexity int, disableInv bool) {
+// preserve coupled reference band, pulse and rounding decisions
+//
+//revive:disable-next-line:cognitive-complexity
+func quantAllBands(
+	encode bool,
+	m *Mode,
+	start, end int,
+	inputX, inputY []float32,
+	collapseMasks []uint8,
+	bandE []float32,
+	pulses []int,
+	shortBlocks bool,
+	spread int,
+	dualStereo bool,
+	intensity int,
+	tfRes []int,
+	totalBits, balance int32,
+	ec rangeCoder,
+	LM, codedBands int,
+	seed *uint32,
+	complexity int,
+	disableInv bool,
+) {
 	var normBuf [quantAllBandsMaxNorm]float32
 	var lowbandScratchBuf, XSave, YSave, XSave2, YSave2, normSave2 [maxBandSize]float32
 	var bytesSave [1275]byte
@@ -1103,10 +1200,10 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 	eBands := m.EBands
 	updateLowband := true
 	C := 1
-	if Y_ != nil {
+	if inputY != nil {
 		C = 2
 	}
-	thetaRDO := encode && Y_ != nil && !dualStereo && complexity >= 8
+	thetaRDO := encode && inputY != nil && !dualStereo && complexity >= 8
 	resynth := !encode || thetaRDO
 	var ctx bandCtx
 
@@ -1132,7 +1229,7 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 	if encode && resynth {
 		lowbandScratch = lowbandScratchBuf[:M*int(eBands[m.NbEBands]-eBands[m.NbEBands-1])]
 	} else {
-		lowbandScratch = X_[M*int(eBands[m.EffEBands-1]):]
+		lowbandScratch = inputX[M*int(eBands[m.EffEBands-1]):]
 	}
 
 	lowbandOffset := 0
@@ -1157,10 +1254,10 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 		ctx.i = i
 		last := i == end-1
 
-		X := X_[M*int(eBands[i]):]
+		X := inputX[M*int(eBands[i]):]
 		var Y []float32
-		if Y_ != nil {
-			Y = Y_[M*int(eBands[i]):]
+		if inputY != nil {
+			Y = inputY[M*int(eBands[i]):]
 		}
 		N := M*int(eBands[i+1]) - M*int(eBands[i])
 		tell := int32(ec.tellFrac())
@@ -1178,7 +1275,8 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 			b = 0
 		}
 
-		if resynth && (M*int(eBands[i])-N >= M*int(eBands[start]) || i == start+1) && (updateLowband || lowbandOffset == 0) {
+		if resynth && (M*int(eBands[i])-N >= M*int(eBands[start]) || i == start+1) &&
+			(updateLowband || lowbandOffset == 0) {
 			lowbandOffset = i
 		}
 		if i == start+1 {
@@ -1189,7 +1287,7 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 		ctx.tfChange = tfChange
 		if i >= m.EffEBands {
 			X = norm
-			if Y_ != nil {
+			if inputY != nil {
 				Y = norm
 			}
 			lowbandScratch = nil
@@ -1214,7 +1312,7 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 			foldEnd := lowbandOffset - 1
 			for {
 				foldEnd++
-				if !(foldEnd < i && M*int(eBands[foldEnd]) < effectiveLowband+normOffset+N) {
+				if foldEnd >= i || M*int(eBands[foldEnd]) >= effectiveLowband+normOffset+N {
 					break
 				}
 			}
@@ -1257,8 +1355,32 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 			}
 		}
 		if dualStereo {
-			xCM = quantBand(&ctx, X, N, b/2, B, lowband, LM, lowbandOut, 1, lowbandScratch, int(xCM))
-			yCM = quantBand(&ctx, Y, N, b/2, B, lowband2, LM, lowbandOut2, 1, lowbandScratch, int(yCM))
+			xCM = quantBand(
+				&ctx,
+				X,
+				N,
+				b/2,
+				B,
+				lowband,
+				LM,
+				lowbandOut,
+				1,
+				lowbandScratch,
+				int(xCM),
+			)
+			yCM = quantBand(
+				&ctx,
+				Y,
+				N,
+				b/2,
+				B,
+				lowband2,
+				LM,
+				lowbandOut2,
+				1,
+				lowbandScratch,
+				int(yCM),
+			)
 		} else {
 			if Y != nil {
 				if thetaRDO && i < intensity {
@@ -1272,8 +1394,24 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 					copy(YSave[:N], Y[:N])
 					// Encode and round down.
 					ctx.thetaRound = -1
-					xCM = quantBandStereo(&ctx, X, Y, N, b, B, lowband, LM, lowbandOut, lowbandScratch, int(cm))
-					dist0 := float32(w[0]*dsp.CeltInnerProd(XSave[:], X, N)) + float32(w[1]*dsp.CeltInnerProd(YSave[:], Y, N))
+					xCM = quantBandStereo(
+						&ctx,
+						X,
+						Y,
+						N,
+						b,
+						B,
+						lowband,
+						LM,
+						lowbandOut,
+						lowbandScratch,
+						int(cm),
+					)
+					dist0 := float32(
+						w[0]*dsp.CeltInnerProd(XSave[:], X, N),
+					) + float32(
+						w[1]*dsp.CeltInnerProd(YSave[:], Y, N),
+					)
 
 					// Save first result.
 					cm2 := xCM
@@ -1299,8 +1437,24 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 					}
 					// Encode and round up.
 					ctx.thetaRound = 1
-					xCM = quantBandStereo(&ctx, X, Y, N, b, B, lowband, LM, lowbandOut, lowbandScratch, int(cm))
-					dist1 := float32(w[0]*dsp.CeltInnerProd(XSave[:], X, N)) + float32(w[1]*dsp.CeltInnerProd(YSave[:], Y, N))
+					xCM = quantBandStereo(
+						&ctx,
+						X,
+						Y,
+						N,
+						b,
+						B,
+						lowband,
+						LM,
+						lowbandOut,
+						lowbandScratch,
+						int(cm),
+					)
+					dist1 := float32(
+						w[0]*dsp.CeltInnerProd(XSave[:], X, N),
+					) + float32(
+						w[1]*dsp.CeltInnerProd(YSave[:], Y, N),
+					)
 					if dist0 >= dist1 {
 						xCM = cm2
 						*ec.enc = ecSave2
@@ -1314,10 +1468,34 @@ func quantAllBands(encode bool, m *Mode, start, end int, X_, Y_ []float32, colla
 					}
 				} else {
 					ctx.thetaRound = 0
-					xCM = quantBandStereo(&ctx, X, Y, N, b, B, lowband, LM, lowbandOut, lowbandScratch, int(xCM|yCM))
+					xCM = quantBandStereo(
+						&ctx,
+						X,
+						Y,
+						N,
+						b,
+						B,
+						lowband,
+						LM,
+						lowbandOut,
+						lowbandScratch,
+						int(xCM|yCM),
+					)
 				}
 			} else {
-				xCM = quantBand(&ctx, X, N, b, B, lowband, LM, lowbandOut, 1, lowbandScratch, int(xCM|yCM))
+				xCM = quantBand(
+					&ctx,
+					X,
+					N,
+					b,
+					B,
+					lowband,
+					LM,
+					lowbandOut,
+					1,
+					lowbandScratch,
+					int(xCM|yCM),
+				)
 			}
 			yCM = xCM
 		}
