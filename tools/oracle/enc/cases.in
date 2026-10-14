@@ -1,0 +1,670 @@
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 in=x
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 in=x br=12000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 in=x br=16000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 in=x br=24000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 in=x br=32000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 in=x br=64000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=150 fec=1 loss=5 dtx=1 in=s3
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 api=f in=x+20000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 vbr=0 br=20000 in=x
+t=enc fs=24000 ch=1 app=2048 fr=480 n=60 fec=1 loss=5 cx=0 in=x+48000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=60 fec=1 loss=5 cx=3 in=x+48000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=60 fec=1 loss=5 cx=6 in=x+48000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=60 fec=1 loss=5 cx=10 in=x+48000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=120 fec=1 loss=5 @20:loss=15 @40:loss=30 @60:loss=0 @80:loss=5 @90:br=9000 @100:br=40000
+t=enc fs=8000 ch=1 app=2048 fr=800 n=8 api=16 mb=4000 in=x
+t=enc fs=8000 ch=1 app=2048 fr=20 n=320 api=16 mb=4000 in=x br=64000
+t=enc fs=8000 ch=2 app=2048 fr=480 n=13 api=16 mb=4000 in=x br=-1000
+t=enc fs=8000 ch=2 app=2048 fr=20 n=320 api=f mb=4000 in=s5 br=10000
+t=enc fs=12000 ch=1 app=2048 fr=1200 n=8 api=16 mb=4000 in=x+30000 br=-1000
+t=enc fs=12000 ch=1 app=2048 fr=60 n=160 api=16 mb=4000 in=s5 br=128000
+t=enc fs=12000 ch=2 app=2048 fr=1200 n=8 api=16 mb=4000 in=s5 br=-1000
+t=enc fs=12000 ch=2 app=2048 fr=1200 n=8 api=16 mb=4000 in=s5
+t=enc fs=16000 ch=1 app=2048 fr=40 n=320 api=16 mb=4000 in=x+70000 br=10000
+t=enc fs=16000 ch=1 app=2048 fr=1600 n=8 api=24 mb=4000 in=x+70000 br=128000
+t=enc fs=16000 ch=2 app=2048 fr=320 n=40 api=16 mb=4000 in=s2 br=64000
+t=enc fs=16000 ch=2 app=2048 fr=1920 n=6 api=16 mb=4000 in=s5 br=64000
+t=enc fs=24000 ch=1 app=2048 fr=120 n=160 api=24 mb=4000 in=x+30000
+t=enc fs=24000 ch=1 app=2048 fr=2400 n=8 api=f mb=4000 in=x+30000 br=64000
+t=enc fs=24000 ch=2 app=2048 fr=60 n=320 api=f mb=4000 in=x+30000
+t=enc fs=24000 ch=2 app=2048 fr=120 n=160 api=16 mb=4000 in=x+30000 br=32000
+t=enc fs=48000 ch=1 app=2048 fr=120 n=320 api=16 mb=4000 in=s5 br=10000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=80 api=24 mb=4000 in=s2 br=64000
+t=enc fs=48000 ch=2 app=2048 fr=120 n=320 api=24 mb=4000 in=x br=20000
+t=enc fs=48000 ch=2 app=2048 fr=480 n=80 api=16 mb=4000 in=x+70000 br=10000
+t=enc fs=8000 ch=1 app=2049 fr=80 n=80 api=f mb=4000 in=x br=128000
+t=enc fs=8000 ch=1 app=2049 fr=640 n=10 api=24 mb=4000 in=s2 br=128000
+t=enc fs=8000 ch=2 app=2049 fr=480 n=13 api=f mb=4000 in=s2 br=32000
+t=enc fs=8000 ch=2 app=2049 fr=20 n=320 api=f mb=4000 in=s5 br=128000
+t=enc fs=12000 ch=1 app=2049 fr=120 n=80 api=f mb=4000 in=x+70000 br=20000
+t=enc fs=12000 ch=1 app=2049 fr=480 n=20 api=16 mb=4000 in=s2
+t=enc fs=12000 ch=2 app=2049 fr=960 n=10 api=16 mb=4000 in=s5 br=128000
+t=enc fs=12000 ch=2 app=2049 fr=60 n=160 api=f mb=4000 in=s2 br=128000
+t=enc fs=16000 ch=1 app=2049 fr=640 n=20 api=16 mb=4000 in=x+70000 br=64000
+t=enc fs=16000 ch=1 app=2049 fr=80 n=160 api=16 mb=4000 in=s5 br=64000
+t=enc fs=16000 ch=2 app=2049 fr=640 n=20 api=24 mb=4000 in=s2 br=-1000
+t=enc fs=16000 ch=2 app=2049 fr=80 n=160 api=f mb=4000 in=x+30000
+t=enc fs=24000 ch=1 app=2049 fr=60 n=320 api=16 mb=4000 in=x+30000 br=10000
+t=enc fs=24000 ch=1 app=2049 fr=2880 n=6 api=16 mb=4000 in=x+70000 br=128000
+t=enc fs=24000 ch=2 app=2049 fr=960 n=20 api=16 mb=4000 in=s5 br=20000
+t=enc fs=24000 ch=2 app=2049 fr=960 n=20 api=16 mb=4000 in=s2 br=128000
+t=enc fs=48000 ch=1 app=2049 fr=960 n=40 api=f mb=4000 in=x+30000
+t=enc fs=48000 ch=1 app=2049 fr=4800 n=8 api=16 mb=4000 in=x+70000 br=32000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 api=f mb=4000 in=x+30000 br=32000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 api=16 mb=4000 in=x+70000 br=10000
+t=enc fs=8000 ch=1 app=2051 fr=960 n=6 api=f mb=4000 in=s5 br=-1000
+t=enc fs=8000 ch=1 app=2051 fr=800 n=8 api=16 mb=4000 in=x+30000 br=10000
+t=enc fs=8000 ch=2 app=2051 fr=20 n=320 api=16 mb=4000 in=x+30000 br=32000
+t=enc fs=8000 ch=2 app=2051 fr=960 n=6 api=24 mb=4000 in=x+30000
+t=enc fs=12000 ch=1 app=2051 fr=30 n=320 api=16 mb=4000 in=x br=64000
+t=enc fs=12000 ch=1 app=2051 fr=120 n=80 api=16 mb=4000 in=s2 br=-1000
+t=enc fs=12000 ch=2 app=2051 fr=960 n=10 api=24 mb=4000 in=x+30000 br=64000
+t=enc fs=12000 ch=2 app=2051 fr=960 n=10 api=24 mb=4000 in=s5 br=128000
+t=enc fs=16000 ch=1 app=2051 fr=640 n=20 api=24 mb=4000 in=s5 br=20000
+t=enc fs=16000 ch=1 app=2051 fr=160 n=80 api=16 mb=4000 in=x+70000 br=128000
+t=enc fs=16000 ch=2 app=2051 fr=640 n=20 api=f mb=4000 in=s5 br=20000
+t=enc fs=16000 ch=2 app=2051 fr=640 n=20 api=16 mb=4000 in=s2 br=32000
+t=enc fs=24000 ch=1 app=2051 fr=960 n=20 api=24 mb=4000 in=s5 br=-1000
+t=enc fs=24000 ch=1 app=2051 fr=1920 n=10 api=24 mb=4000 in=s2
+t=enc fs=24000 ch=2 app=2051 fr=480 n=40 api=f mb=4000 in=x+30000 br=128000
+t=enc fs=24000 ch=2 app=2051 fr=1920 n=10 api=16 mb=4000 in=x br=10000
+t=enc fs=48000 ch=1 app=2051 fr=4800 n=8 api=24 mb=4000 in=s2 br=20000
+t=enc fs=48000 ch=1 app=2051 fr=4800 n=8 api=f mb=4000 in=s2 br=-1000
+t=enc fs=48000 ch=2 app=2051 fr=480 n=80 api=24 mb=4000 in=s5 br=10000
+t=enc fs=48000 ch=2 app=2051 fr=2880 n=13 api=16 mb=4000 in=s5 br=-1000
+t=enc fs=8000 ch=1 app=2052 fr=640 n=10 api=f mb=4000 in=x br=20000
+t=enc fs=8000 ch=1 app=2052 fr=960 n=6 api=f mb=4000 in=x br=128000
+t=enc fs=8000 ch=2 app=2052 fr=80 n=80 api=f mb=4000 in=x br=10000
+t=enc fs=8000 ch=2 app=2052 fr=160 n=40 api=24 mb=4000 in=x+70000 br=32000
+t=enc fs=12000 ch=1 app=2052 fr=1440 n=6 api=24 mb=4000 in=x+70000 br=128000
+t=enc fs=12000 ch=1 app=2052 fr=1200 n=8 api=24 mb=4000 in=s5 br=64000
+t=enc fs=12000 ch=2 app=2052 fr=480 n=20 api=16 mb=4000 in=s5 br=32000
+t=enc fs=12000 ch=2 app=2052 fr=1440 n=6 api=24 mb=4000 in=x br=64000
+t=enc fs=16000 ch=1 app=2052 fr=1280 n=10 api=16 mb=4000 in=x+70000 br=64000
+t=enc fs=16000 ch=1 app=2052 fr=1280 n=10 api=24 mb=4000 in=s2 br=10000
+t=enc fs=16000 ch=2 app=2052 fr=640 n=20 api=16 mb=4000 in=x+30000
+t=enc fs=16000 ch=2 app=2052 fr=640 n=20 api=16 mb=4000 in=x br=10000
+t=enc fs=24000 ch=1 app=2052 fr=1440 n=13 api=16 mb=4000 in=x+30000
+t=enc fs=24000 ch=1 app=2052 fr=2400 n=8 api=24 mb=4000 in=s5 br=-1000
+t=enc fs=24000 ch=2 app=2052 fr=960 n=20 api=16 mb=4000 in=x+70000 br=20000
+t=enc fs=24000 ch=2 app=2052 fr=960 n=20 api=f mb=4000 in=s5 br=64000
+t=enc fs=48000 ch=1 app=2052 fr=960 n=40 api=16 mb=4000 in=x br=10000
+t=enc fs=48000 ch=1 app=2052 fr=4800 n=8 api=24 mb=4000 in=s5 br=32000
+t=enc fs=48000 ch=2 app=2052 fr=960 n=40 api=f mb=4000 in=s2 br=-1000
+t=enc fs=48000 ch=2 app=2052 fr=4800 n=8 api=16 mb=4000 in=s5 br=64000
+t=enc fs=8000 ch=1 app=2053 fr=40 n=160 api=16 mb=4000 in=x+30000 br=-1000
+t=enc fs=8000 ch=1 app=2053 fr=960 n=6 api=f mb=4000 in=x+70000 br=128000
+t=enc fs=8000 ch=2 app=2053 fr=80 n=80 api=f mb=4000 in=x br=64000
+t=enc fs=8000 ch=2 app=2053 fr=480 n=13 api=24 mb=4000 in=s2
+t=enc fs=12000 ch=1 app=2053 fr=30 n=320 api=16 mb=4000 in=x+70000 br=32000
+t=enc fs=12000 ch=1 app=2053 fr=240 n=40 api=16 mb=4000 in=x+70000 br=32000
+t=enc fs=12000 ch=2 app=2053 fr=1440 n=6 api=f mb=4000 in=s5 br=64000
+t=enc fs=12000 ch=2 app=2053 fr=1200 n=8 api=16 mb=4000 in=s2
+t=enc fs=16000 ch=1 app=2053 fr=80 n=160 api=24 mb=4000 in=s2 br=128000
+t=enc fs=16000 ch=1 app=2053 fr=960 n=13 api=f mb=4000 in=x+30000 br=-1000
+t=enc fs=16000 ch=2 app=2053 fr=40 n=320 api=24 mb=4000 in=s5 br=128000
+t=enc fs=16000 ch=2 app=2053 fr=960 n=13 api=16 mb=4000 in=x br=20000
+t=enc fs=24000 ch=1 app=2053 fr=60 n=320 api=16 mb=4000 in=s5 br=-1000
+t=enc fs=24000 ch=1 app=2053 fr=2880 n=6 api=16 mb=4000 in=s5 br=64000
+t=enc fs=24000 ch=2 app=2053 fr=240 n=80 api=24 mb=4000 in=x br=64000
+t=enc fs=24000 ch=2 app=2053 fr=2400 n=8 api=24 mb=4000 in=x+70000 br=10000
+t=enc fs=48000 ch=1 app=2053 fr=3840 n=10 api=24 mb=4000 in=x+30000 br=20000
+t=enc fs=48000 ch=1 app=2053 fr=1920 n=20 api=24 mb=4000 in=s5
+t=enc fs=48000 ch=2 app=2053 fr=1920 n=20 api=16 mb=4000 in=x+30000
+t=enc fs=48000 ch=2 app=2053 fr=5760 n=6 api=24 mb=4000 in=s5 br=32000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=6000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=6000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=6000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=8000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=8000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=8000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=10000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=10000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=10000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=12000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=12000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=12000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=16000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=16000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=16000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=20000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=20000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=20000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=24000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=24000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=24000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=32000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=32000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=32000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=48000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=48000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=64000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=64000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=64000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=96000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=96000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=96000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=128000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=128000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=128000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=192000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=192000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=192000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=256000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=256000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=256000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=320000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=320000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=320000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=510000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=510000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=510000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=-1000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=-1000 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=-1000 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 br=-1 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 br=-1 mb=4000 in=x+40000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=40 br=-1 mb=4000 in=x+80000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=8000 vbr=0 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=8000 vbr=0 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=8000 vbr=1 cvbr=0 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=8000 vbr=1 cvbr=0 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=8000 vbr=1 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=8000 vbr=1 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=16000 vbr=0 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=16000 vbr=0 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=16000 vbr=1 cvbr=0 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=16000 vbr=1 cvbr=0 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=16000 vbr=1 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=16000 vbr=1 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=24000 vbr=0 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=24000 vbr=0 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=24000 vbr=1 cvbr=0 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=24000 vbr=1 cvbr=0 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=24000 vbr=1 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=24000 vbr=1 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=40000 vbr=0 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=40000 vbr=0 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=40000 vbr=1 cvbr=0 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=40000 vbr=1 cvbr=0 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=40000 vbr=1 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=40000 vbr=1 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=96000 vbr=0 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=96000 vbr=0 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=96000 vbr=1 cvbr=0 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=96000 vbr=1 cvbr=0 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 br=96000 vbr=1 cvbr=1 in=x+10000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 br=96000 vbr=1 cvbr=1 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=480 n=100 br=48000 vbr=0 mb=4000 in=x
+t=enc fs=24000 ch=1 app=2048 fr=240 n=100 br=16000 vbr=0 mb=4000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=50 br=48000 vbr=0 mb=4000 in=x
+t=enc fs=24000 ch=1 app=2048 fr=480 n=50 br=16000 vbr=0 mb=4000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=1920 n=25 br=48000 vbr=0 mb=4000 in=x
+t=enc fs=24000 ch=1 app=2048 fr=960 n=25 br=16000 vbr=0 mb=4000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=2880 n=16 br=48000 vbr=0 mb=4000 in=x
+t=enc fs=24000 ch=1 app=2048 fr=1440 n=16 br=16000 vbr=0 mb=4000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=8 br=48000 vbr=0 mb=4000 in=x
+t=enc fs=24000 ch=1 app=2048 fr=2880 n=8 br=16000 vbr=0 mb=4000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=0 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=0 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=0 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=1 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=1 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=1 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=2 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=2 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=2 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=3 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=3 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=3 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=4 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=4 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=4 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=5 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=5 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=5 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=6 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=6 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=6 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=7 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=7 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=7 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=8 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=8 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=8 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=9 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=9 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=9 in=x+45000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=25 br=32000 cx=10 in=x+5000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=25 cx=10 in=x+25000
+t=enc fs=48000 ch=1 app=2051 fr=240 n=60 br=48000 cx=10 in=x+45000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=1 loss=0 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=1 loss=0 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=1 loss=1 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=1 loss=1 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=1 loss=5 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=1 loss=5 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=1 loss=10 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=1 loss=10 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=1 loss=20 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=1 loss=20 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=1 loss=30 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=1 loss=30 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=2 loss=0 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=2 loss=0 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=2 loss=1 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=2 loss=1 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=2 loss=5 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=2 loss=5 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=2 loss=10 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=2 loss=10 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=2 loss=20 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=2 loss=20 br=28000 in=x+50000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=40 fec=2 loss=30 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fec=2 loss=30 br=28000 in=x+50000
+t=enc fs=48000 ch=1 app=2048 fr=960 n=40 fec=1 loss=3 br=14000 in=x+90000
+t=enc fs=8000 ch=1 app=2048 fr=160 n=40 fec=1 loss=3 in=x+15000
+t=enc fs=48000 ch=1 app=2048 fr=960 n=40 fec=1 loss=12 br=14000 in=x+90000
+t=enc fs=8000 ch=1 app=2048 fr=160 n=40 fec=1 loss=12 in=x+15000
+t=enc fs=48000 ch=1 app=2048 fr=960 n=40 fec=1 loss=25 br=14000 in=x+90000
+t=enc fs=8000 ch=1 app=2048 fr=160 n=40 fec=1 loss=25 in=x+15000
+t=enc fs=48000 ch=1 app=2048 fr=960 n=150 dtx=1 cx=0 in=s3
+t=enc fs=48000 ch=1 app=2048 fr=960 n=150 dtx=1 cx=5 in=s3
+t=enc fs=48000 ch=1 app=2048 fr=960 n=150 dtx=1 cx=10 in=s3
+t=enc fs=16000 ch=2 app=2048 fr=320 n=150 dtx=1 in=s3
+t=enc fs=48000 ch=1 app=2049 fr=960 n=150 dtx=1 cx=0 in=s3
+t=enc fs=48000 ch=1 app=2049 fr=960 n=150 dtx=1 cx=5 in=s3
+t=enc fs=48000 ch=1 app=2049 fr=960 n=150 dtx=1 cx=10 in=s3
+t=enc fs=16000 ch=2 app=2049 fr=320 n=150 dtx=1 in=s3
+t=enc fs=48000 ch=1 app=2051 fr=960 n=150 dtx=1 cx=0 in=s3
+t=enc fs=48000 ch=1 app=2051 fr=960 n=150 dtx=1 cx=5 in=s3
+t=enc fs=48000 ch=1 app=2051 fr=960 n=150 dtx=1 cx=10 in=s3
+t=enc fs=16000 ch=2 app=2051 fr=320 n=150 dtx=1 in=s3
+t=enc fs=48000 ch=1 app=2052 fr=960 n=150 dtx=1 cx=0 in=s3
+t=enc fs=48000 ch=1 app=2052 fr=960 n=150 dtx=1 cx=5 in=s3
+t=enc fs=48000 ch=1 app=2052 fr=960 n=150 dtx=1 cx=10 in=s3
+t=enc fs=16000 ch=2 app=2052 fr=320 n=150 dtx=1 in=s3
+t=enc fs=48000 ch=1 app=2053 fr=960 n=150 dtx=1 cx=0 in=s3
+t=enc fs=48000 ch=1 app=2053 fr=960 n=150 dtx=1 cx=5 in=s3
+t=enc fs=48000 ch=1 app=2053 fr=960 n=150 dtx=1 cx=10 in=s3
+t=enc fs=16000 ch=2 app=2053 fr=320 n=150 dtx=1 in=s3
+t=enc fs=48000 ch=1 app=2048 fr=960 n=150 dtx=1 in=s1
+t=enc fs=48000 ch=2 app=2049 fr=1920 n=75 dtx=1 in=s3
+t=enc fs=16000 ch=1 app=2048 fr=960 n=50 dtx=1 in=s3
+t=enc fs=48000 ch=1 app=2049 fr=5760 n=25 dtx=1 mb=4000 in=s3
+t=enc fs=24000 ch=1 app=2048 fr=480 n=150 dtx=1 fec=1 loss=5 cx=3 in=s3
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 sig=3001 br=24000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=40 sig=3001 br=48000 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 sig=3001 br=24000 in=x
+t=enc fs=48000 ch=1 app=2049 fr=960 n=40 sig=3001 br=48000 in=x+60000
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 sig=3002 br=24000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=40 sig=3002 br=48000 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 sig=3002 br=24000 in=x
+t=enc fs=48000 ch=1 app=2049 fr=960 n=40 sig=3002 br=48000 in=x+60000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 br=24000 @10:sig=3001 @25:sig=3002 @40:sig=-1000 @45:vr=90
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 bw=1101 br=64000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=30 bw=1101 in=x+30000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 maxbw=1101 br=32000 in=x+60000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=30 maxbw=1101 fec=1 loss=5 in=x+90000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 bw=1102 br=64000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=30 bw=1102 in=x+30000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 maxbw=1102 br=32000 in=x+60000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=30 maxbw=1102 fec=1 loss=5 in=x+90000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 bw=1103 br=64000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=30 bw=1103 in=x+30000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 maxbw=1103 br=32000 in=x+60000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=30 maxbw=1103 fec=1 loss=5 in=x+90000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 bw=1104 br=64000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=30 bw=1104 in=x+30000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 maxbw=1104 br=32000 in=x+60000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=30 maxbw=1104 fec=1 loss=5 in=x+90000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 bw=1105 br=64000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=30 bw=1105 in=x+30000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 maxbw=1105 br=32000 in=x+60000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=30 maxbw=1105 fec=1 loss=5 in=x+90000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 bw=-1000 br=64000 in=x
+t=enc fs=48000 ch=1 app=2048 fr=960 n=30 bw=-1000 in=x+30000
+t=enc fs=48000 ch=1 app=2048 fr=960 n=80 br=40000 @10:bw=1101 @20:bw=1103 @30:bw=1105 @40:bw=1102 @50:maxbw=1104 @60:bw=-1000 @70:maxbw=1105
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=8 api=16 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=8 api=24 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=8 api=f in=s1
+t=enc fs=16000 ch=1 app=2048 fr=320 n=75 lsb=8 dtx=1 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=12 api=16 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=12 api=24 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=12 api=f in=s1
+t=enc fs=16000 ch=1 app=2048 fr=320 n=75 lsb=12 dtx=1 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=16 api=16 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=16 api=24 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=16 api=f in=s1
+t=enc fs=16000 ch=1 app=2048 fr=320 n=75 lsb=16 dtx=1 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=24 api=16 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=24 api=24 in=s1
+t=enc fs=48000 ch=1 app=2049 fr=960 n=75 lsb=24 api=f in=s1
+t=enc fs=16000 ch=1 app=2048 fr=320 n=75 lsb=24 dtx=1 in=s1
+t=enc fs=48000 ch=2 app=2048 fr=960 n=30 pd=1 br=40000 in=x
+t=enc fs=48000 ch=2 app=2048 fr=480 n=60 pi=1 br=96000 in=x+20000
+t=enc fs=24000 ch=1 app=2048 fr=480 n=30 pd=1 fec=1 loss=10 in=x+40000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 pd=1 br=40000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=480 n=60 pi=1 br=96000 in=x+20000
+t=enc fs=24000 ch=1 app=2049 fr=480 n=30 pd=1 fec=1 loss=10 in=x+40000
+t=enc fs=48000 ch=2 app=2051 fr=960 n=30 pd=1 br=40000 in=x
+t=enc fs=48000 ch=2 app=2051 fr=480 n=60 pi=1 br=96000 in=x+20000
+t=enc fs=24000 ch=1 app=2051 fr=480 n=30 pd=1 fec=1 loss=10 in=x+40000
+t=enc fs=48000 ch=2 app=2049 fr=480 n=60 mode=1000 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=160 n=60 mode=1000 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 mode=1000 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 mode=1000 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=1920 n=15 mode=1000 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=15 mode=1000 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=2880 n=10 mode=1000 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=960 n=10 mode=1000 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=480 n=60 mode=1001 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=160 n=60 mode=1001 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 mode=1001 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 mode=1001 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=1920 n=15 mode=1001 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=15 mode=1001 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=2880 n=10 mode=1001 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=960 n=10 mode=1001 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=480 n=60 mode=1002 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=160 n=60 mode=1002 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 mode=1002 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 mode=1002 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=1920 n=15 mode=1002 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=15 mode=1002 in=x+35000
+t=enc fs=48000 ch=2 app=2049 fr=2880 n=10 mode=1002 br=48000 mb=4000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=960 n=10 mode=1002 in=x+35000
+t=enc fs=16000 ch=1 app=2049 fr=160 n=160 br=40000 in=x @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=16000 ch=1 app=2048 fr=160 n=160 br=24000 vbr=0 in=x+12345 @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=16000 ch=2 app=2049 fr=160 n=160 br=40000 in=x @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=16000 ch=2 app=2048 fr=160 n=160 br=24000 vbr=0 in=x+12345 @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=48000 ch=1 app=2049 fr=480 n=160 br=40000 in=x @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=160 br=24000 vbr=0 in=x+12345 @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=48000 ch=2 app=2049 fr=480 n=160 br=40000 in=x @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=48000 ch=2 app=2048 fr=480 n=160 br=24000 vbr=0 in=x+12345 @20:mode=1000 @40:mode=1001 @60:mode=1002 @80:mode=1001 @100:mode=1000 @120:mode=1002 @140:mode=-1000
+t=enc fs=16000 ch=1 app=2049 fr=320 n=80 br=40000 in=x @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=16000 ch=1 app=2048 fr=320 n=80 br=24000 vbr=0 in=x+12345 @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=16000 ch=2 app=2049 fr=320 n=80 br=40000 in=x @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=16000 ch=2 app=2048 fr=320 n=80 br=24000 vbr=0 in=x+12345 @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=48000 ch=1 app=2049 fr=960 n=80 br=40000 in=x @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=48000 ch=1 app=2048 fr=960 n=80 br=24000 vbr=0 in=x+12345 @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=80 br=40000 in=x @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=48000 ch=2 app=2048 fr=960 n=80 br=24000 vbr=0 in=x+12345 @10:mode=1000 @20:mode=1001 @30:mode=1002 @40:mode=1001 @50:mode=1000 @60:mode=1002 @70:mode=-1000
+t=enc fs=48000 ch=2 app=2049 fr=1920 n=40 br=40000 mb=4000 @5:mode=1002 @10:mode=1000 @15:mode=1001 @20:mode=1002 @30:mode=1000
+t=enc fs=48000 ch=1 app=2049 fr=2880 n=30 br=30000 mb=4000 @5:mode=1002 @10:mode=1000 @15:mode=1001 @20:mode=1002 @25:mode=1001
+t=enc fs=48000 ch=2 app=2049 fr=960 n=120 mb=4000 @10:br=12000 @20:br=64000 @30:br=9000 @40:br=128000 @50:br=16000 @60:br=24000 @70:br=40000 @80:br=6000 @90:br=320000 @100:br=-1000
+t=enc fs=48000 ch=1 app=2048 fr=480 n=200 mb=4000 @20:br=12000 @40:br=64000 @60:br=9000 @80:br=128000 @100:br=16000 @120:br=24000 @140:br=40000 @160:br=6000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fc=1 br=32000 in=x
+t=enc fs=24000 ch=2 app=2048 fr=480 n=40 fc=1 in=s5
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fc=2 br=32000 in=x
+t=enc fs=24000 ch=2 app=2048 fr=480 n=40 fc=2 in=s5
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 fc=-1000 br=32000 in=x
+t=enc fs=24000 ch=2 app=2048 fr=480 n=40 fc=-1000 in=s5
+t=enc fs=48000 ch=1 app=2049 fr=960 n=5 fc=2 in=x
+t=enc fs=48000 ch=2 app=2048 fr=960 n=100 br=24000 @10:fc=1 @20:fc=2 @30:fc=1 @40:fc=-1000 @50:br=12000 @60:br=40000 @70:fc=1
+t=enc fs=48000 ch=2 app=2048 fr=2880 n=40 br=20000 mb=4000 @5:fc=1 @10:fc=2 @15:fc=1 @20:fc=-1000 @25:br=60000
+t=enc fs=16000 ch=2 app=2048 fr=1920 n=40 br=20000 mb=4000 @5:fc=1 @10:fc=2 @15:fc=1 @20:fc=-1000
+t=enc fs=48000 ch=2 app=2049 fr=960 n=120 in=s5
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 br=32000 setapp=2048 @10:reset=1 @20:setapp=2049 @30:reset=1 @35:mode=1000 @45:reset=1
+t=enc fs=16000 ch=1 app=2048 fr=320 n=60 setapp=2051 @15:reset=1 @30:setapp=2048
+t=enc fs=48000 ch=1 app=2052 fr=960 n=20 setapp=2048
+t=enc fs=48000 ch=1 app=2053 fr=960 n=20 setapp=2048 @5:pi=1 @6:mode=1000
+t=enc fs=48000 ch=2 app=2048 fr=5760 n=26 br=40000 mb=8000 in=x @0:fd=5001 @2:fd=5002 @4:fd=5003 @6:fd=5004 @8:fd=5005 @10:fd=5006 @12:fd=5007 @14:fd=5008 @16:fd=5009 @18:fd=5000 @20:fd=5010 @22:fd=4999
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=26 br=40000 mb=8000 in=x @0:fd=5001 @2:fd=5002 @4:fd=5003 @6:fd=5004 @8:fd=5005 @10:fd=5006 @12:fd=5007 @14:fd=5008 @16:fd=5009 @18:fd=5000 @20:fd=5010 @22:fd=4999
+t=enc fs=48000 ch=2 app=2052 fr=5760 n=26 br=40000 mb=8000 in=x @0:fd=5001 @2:fd=5002 @4:fd=5003 @6:fd=5004 @8:fd=5005 @10:fd=5006 @12:fd=5007 @14:fd=5008 @16:fd=5009 @18:fd=5000 @20:fd=5010 @22:fd=4999
+t=enc fs=16000 ch=2 app=2048 fr=1920 n=26 br=40000 mb=8000 in=x @0:fd=5001 @2:fd=5002 @4:fd=5003 @6:fd=5004 @8:fd=5005 @10:fd=5006 @12:fd=5007 @14:fd=5008 @16:fd=5009 @18:fd=5000 @20:fd=5010 @22:fd=4999
+t=enc fs=16000 ch=2 app=2049 fr=1920 n=26 br=40000 mb=8000 in=x @0:fd=5001 @2:fd=5002 @4:fd=5003 @6:fd=5004 @8:fd=5005 @10:fd=5006 @12:fd=5007 @14:fd=5008 @16:fd=5009 @18:fd=5000 @20:fd=5010 @22:fd=4999
+t=enc fs=16000 ch=2 app=2052 fr=1920 n=26 br=40000 mb=8000 in=x @0:fd=5001 @2:fd=5002 @4:fd=5003 @6:fd=5004 @8:fd=5005 @10:fd=5006 @12:fd=5007 @14:fd=5008 @16:fd=5009 @18:fd=5000 @20:fd=5010 @22:fd=4999
+t=enc fs=48000 ch=1 app=2049 fr=960 n=40 cx=10 br=24000 @5:vr=0 @10:vr=100 @15:vr=50 @20:vr=-1 @25:vr=101 @30:dtx=1 @35:cx=11
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 api=16 in=s4
+t=enc fs=24000 ch=1 app=2048 fr=480 n=40 api=16 br=20000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 api=16 in=s4
+t=enc fs=24000 ch=1 app=2049 fr=480 n=40 api=16 br=20000 in=x
+t=enc fs=48000 ch=2 app=2051 fr=960 n=40 api=16 in=s4
+t=enc fs=24000 ch=1 app=2051 fr=480 n=40 api=16 br=20000 in=x
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 api=24 in=s4
+t=enc fs=24000 ch=1 app=2048 fr=480 n=40 api=24 br=20000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 api=24 in=s4
+t=enc fs=24000 ch=1 app=2049 fr=480 n=40 api=24 br=20000 in=x
+t=enc fs=48000 ch=2 app=2051 fr=960 n=40 api=24 in=s4
+t=enc fs=24000 ch=1 app=2051 fr=480 n=40 api=24 br=20000 in=x
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 api=f in=s4
+t=enc fs=24000 ch=1 app=2048 fr=480 n=40 api=f br=20000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 api=f in=s4
+t=enc fs=24000 ch=1 app=2049 fr=480 n=40 api=f br=20000 in=x
+t=enc fs=48000 ch=2 app=2051 fr=960 n=40 api=f in=s4
+t=enc fs=24000 ch=1 app=2051 fr=480 n=40 api=f br=20000 in=x
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 api=f2 in=s4
+t=enc fs=24000 ch=1 app=2048 fr=480 n=40 api=f2 br=20000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=40 api=f2 in=s4
+t=enc fs=24000 ch=1 app=2049 fr=480 n=40 api=f2 br=20000 in=x
+t=enc fs=48000 ch=2 app=2051 fr=960 n=40 api=f2 in=s4
+t=enc fs=24000 ch=1 app=2051 fr=480 n=40 api=f2 br=20000 in=x
+t=enc fs=48000 ch=2 app=2048 fr=960 n=60 in=s0
+t=enc fs=16000 ch=1 app=2048 fr=160 n=120 cx=4 in=s0
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 in=s0
+t=enc fs=16000 ch=1 app=2049 fr=160 n=120 cx=4 in=s0
+t=enc fs=48000 ch=2 app=2051 fr=960 n=60 in=s0
+t=enc fs=16000 ch=1 app=2051 fr=160 n=120 cx=10 in=s0
+t=enc fs=48000 ch=2 app=2048 fr=960 n=60 in=s1
+t=enc fs=16000 ch=1 app=2048 fr=160 n=120 cx=4 in=s1
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 in=s1
+t=enc fs=16000 ch=1 app=2049 fr=160 n=120 cx=1 in=s1
+t=enc fs=48000 ch=2 app=2051 fr=960 n=60 in=s1
+t=enc fs=16000 ch=1 app=2051 fr=160 n=120 cx=4 in=s1
+t=enc fs=48000 ch=2 app=2048 fr=960 n=60 in=s2
+t=enc fs=16000 ch=1 app=2048 fr=160 n=120 cx=8 in=s2
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 in=s2
+t=enc fs=16000 ch=1 app=2049 fr=160 n=120 cx=4 in=s2
+t=enc fs=48000 ch=2 app=2051 fr=960 n=60 in=s2
+t=enc fs=16000 ch=1 app=2051 fr=160 n=120 cx=10 in=s2
+t=enc fs=48000 ch=2 app=2048 fr=960 n=60 in=s3
+t=enc fs=16000 ch=1 app=2048 fr=160 n=120 cx=10 in=s3
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 in=s3
+t=enc fs=16000 ch=1 app=2049 fr=160 n=120 cx=1 in=s3
+t=enc fs=48000 ch=2 app=2051 fr=960 n=60 in=s3
+t=enc fs=16000 ch=1 app=2051 fr=160 n=120 cx=10 in=s3
+t=enc fs=48000 ch=2 app=2048 fr=960 n=60 in=s4
+t=enc fs=16000 ch=1 app=2048 fr=160 n=120 cx=1 in=s4
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 in=s4
+t=enc fs=16000 ch=1 app=2049 fr=160 n=120 cx=1 in=s4
+t=enc fs=48000 ch=2 app=2051 fr=960 n=60 in=s4
+t=enc fs=16000 ch=1 app=2051 fr=160 n=120 cx=1 in=s4
+t=enc fs=48000 ch=2 app=2048 fr=960 n=60 in=s5
+t=enc fs=16000 ch=1 app=2048 fr=160 n=120 cx=4 in=s5
+t=enc fs=48000 ch=2 app=2049 fr=960 n=60 in=s5
+t=enc fs=16000 ch=1 app=2049 fr=160 n=120 cx=10 in=s5
+t=enc fs=48000 ch=2 app=2051 fr=960 n=60 in=s5
+t=enc fs=16000 ch=1 app=2051 fr=160 n=120 cx=10 in=s5
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=1 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=1 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=1 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=1 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=1 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=2 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=2 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=2 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=2 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=2 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=3 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=3 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=3 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=3 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=3 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=4 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=4 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=4 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=4 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=4 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=8 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=8 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=8 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=8 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=8 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=20 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=20 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=20 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=20 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=20 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=50 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=50 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=50 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=50 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=50 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=10 mb=200 in=x
+t=enc fs=48000 ch=1 app=2048 fr=4800 n=6 mb=200 in=x
+t=enc fs=48000 ch=1 app=2048 fr=2880 n=6 mb=200 vbr=0 br=6000 in=x
+t=enc fs=16000 ch=1 app=2048 fr=640 n=8 mb=200 br=6000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=5760 n=4 mb=200 in=x
+t=enc fs=48000 ch=1 app=2049 fr=100 n=3 in=x
+t=enc fs=44100 ch=1 app=2049 fr=960 n=3 in=x
+t=enc fs=48000 ch=3 app=2049 fr=960 n=3 in=x
+t=enc fs=48000 ch=1 app=2050 fr=960 n=3 in=x
+t=enc fs=48000 ch=1 app=2052 fr=240 n=3 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=3 br=0 cx=11 fec=3 loss=101 sig=7 bw=1100 maxbw=1106 fc=3 lsb=7 lsb=25 fd=5011 mode=999 vr=-2 setapp=2052
+t=ms fs=48000 ch=3 streams=2 coupled=1 map=0.1.2 app=2049 fr=960 n=30 br=96000 in=x
+t=ms fs=48000 ch=4 streams=3 coupled=1 map=0.255.1.2 app=2048 fr=960 n=30 br=64000 in=x
+t=ms fs=16000 ch=2 streams=2 coupled=0 map=1.0 app=2048 fr=320 n=30 in=x
+t=ms fs=48000 ch=2 streams=1 coupled=1 map=0.1 app=2049 fr=2880 n=20 br=64000 vbr=0 in=x
+t=ms fs=48000 ch=3 streams=2 coupled=1 map=0.1.3 app=2049 fr=960 n=3 in=x
+t=ms fs=48000 ch=2 streams=2 coupled=1 map=0.1 app=2049 fr=960 n=3 in=x
+t=ms fs=48000 ch=3 streams=2 coupled=1 map=0.1.2 app=2049 fr=960 n=40 mb=4000 br=128000 @5:cx=3 @10:vbr=0 @15:fec=1 @16:loss=10 @20:bw=1103 @25:mode=1000 @30:reset=1 @32:fd=5003 @35:fd=5004 @36:dtx=1 @37:lsb=16 @38:sig=3001 @39:pd=1
+t=sur fs=48000 ch=1 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=1 family=1 app=2049 fr=960 n=25 br=32000 mb=8000 in=x
+t=sur fs=48000 ch=1 family=1 app=2049 fr=960 n=25 br=64000 mb=8000 in=x
+t=sur fs=48000 ch=2 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=2 family=1 app=2049 fr=960 n=25 br=64000 mb=8000 in=x
+t=sur fs=48000 ch=2 family=1 app=2049 fr=960 n=25 br=128000 mb=8000 in=x
+t=sur fs=48000 ch=3 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=3 family=1 app=2049 fr=960 n=25 br=96000 mb=8000 in=x
+t=sur fs=48000 ch=3 family=1 app=2049 fr=960 n=25 br=192000 mb=8000 in=x
+t=sur fs=48000 ch=4 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=4 family=1 app=2049 fr=960 n=25 br=128000 mb=8000 in=x
+t=sur fs=48000 ch=4 family=1 app=2049 fr=960 n=25 br=256000 mb=8000 in=x
+t=sur fs=48000 ch=5 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=5 family=1 app=2049 fr=960 n=25 br=160000 mb=8000 in=x
+t=sur fs=48000 ch=5 family=1 app=2049 fr=960 n=25 br=320000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=192000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=384000 mb=8000 in=x
+t=sur fs=48000 ch=7 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=7 family=1 app=2049 fr=960 n=25 br=224000 mb=8000 in=x
+t=sur fs=48000 ch=7 family=1 app=2049 fr=960 n=25 br=448000 mb=8000 in=x
+t=sur fs=48000 ch=8 family=1 app=2049 fr=960 n=25 br=-1000 mb=8000 in=x
+t=sur fs=48000 ch=8 family=1 app=2049 fr=960 n=25 br=256000 mb=8000 in=x
+t=sur fs=48000 ch=8 family=1 app=2049 fr=960 n=25 br=512000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=480 n=50 br=192000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=1920 n=12 br=256000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=128000 mb=8000 in=x vbr=0
+t=sur fs=48000 ch=8 family=1 app=2049 fr=960 n=25 br=256000 mb=8000 in=x vbr=0
+t=sur fs=24000 ch=6 family=1 app=2048 fr=480 n=25 br=96000 mb=8000 in=x
+t=sur fs=48000 ch=8 family=1 app=2049 fr=2880 n=8 br=320000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2051 fr=960 n=25 br=256000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2052 fr=960 n=25 br=96000 mb=8000 in=x
+t=sur fs=48000 ch=5 family=1 app=2049 fr=240 n=100 br=160000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=30000 mb=8000 in=x
+t=sur fs=16000 ch=6 family=1 app=2049 fr=320 n=25 br=96000 mb=8000 in=x cx=4
+t=sur fs=48000 ch=8 family=1 app=2049 fr=5760 n=6 br=256000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=-1 mb=8000 in=x
+t=sur fs=48000 ch=7 family=1 app=2049 fr=960 n=25 br=200000 mb=8000 in=x api=f
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=200000 mb=8000 in=x api=24
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=25 br=200000 mb=8000 in=x @10:reset=1 @15:br=64000
+t=sur fs=48000 ch=1 family=0 app=2049 fr=960 n=20 br=48000 mb=8000 in=x
+t=sur fs=48000 ch=2 family=0 app=2049 fr=960 n=20 br=96000 mb=8000 in=x
+t=sur fs=48000 ch=3 family=0 app=2049 fr=960 n=20 br=144000 mb=8000 in=x
+t=sur fs=48000 ch=3 family=255 app=2049 fr=960 n=20 br=144000 mb=8000 in=x
+t=sur fs=48000 ch=5 family=255 app=2049 fr=960 n=20 br=240000 mb=8000 in=x
+t=sur fs=48000 ch=4 family=2 app=2049 fr=960 n=20 br=192000 mb=8000 in=x
+t=sur fs=48000 ch=9 family=2 app=2049 fr=960 n=20 br=432000 mb=8000 in=x
+t=sur fs=48000 ch=11 family=2 app=2049 fr=960 n=20 br=528000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=2 app=2049 fr=960 n=20 br=288000 mb=8000 in=x
+t=sur fs=48000 ch=16 family=2 app=2049 fr=960 n=20 br=768000 mb=8000 in=x
+t=sur fs=48000 ch=2 family=1 app=2049 fr=960 n=20 br=96000 mb=8000 in=x
+t=sur fs=48000 ch=9 family=1 app=2049 fr=960 n=20 br=432000 mb=8000 in=x
+t=sur fs=48000 ch=3 family=7 app=2049 fr=960 n=20 br=144000 mb=8000 in=x
+t=sur fs=48000 ch=9 family=2 app=2049 fr=960 n=20 vbr=0 br=200000 mb=8000 in=x
+t=sur fs=48000 ch=4 family=2 app=2049 fr=960 n=20 mb=8000 in=x
+t=sur fs=48000 ch=4 family=2 app=2049 fr=960 n=20 br=-1 mb=8000 in=x
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=12 br=128000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=12 br=128000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=12 br=128000 api=f mb=8000 in=x
+t=proj fs=48000 ch=6 family=3 app=2049 fr=960 n=12 br=192000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=6 family=3 app=2049 fr=960 n=12 br=192000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=6 family=3 app=2049 fr=960 n=12 br=192000 api=f mb=8000 in=x
+t=proj fs=48000 ch=9 family=3 app=2049 fr=960 n=12 br=288000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=9 family=3 app=2049 fr=960 n=12 br=288000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=9 family=3 app=2049 fr=960 n=12 br=288000 api=f mb=8000 in=x
+t=proj fs=48000 ch=11 family=3 app=2049 fr=960 n=12 br=352000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=11 family=3 app=2049 fr=960 n=12 br=352000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=11 family=3 app=2049 fr=960 n=12 br=352000 api=f mb=8000 in=x
+t=proj fs=48000 ch=16 family=3 app=2049 fr=960 n=12 br=512000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=16 family=3 app=2049 fr=960 n=12 br=512000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=16 family=3 app=2049 fr=960 n=12 br=512000 api=f mb=8000 in=x
+t=proj fs=48000 ch=18 family=3 app=2049 fr=960 n=12 br=576000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=18 family=3 app=2049 fr=960 n=12 br=576000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=18 family=3 app=2049 fr=960 n=12 br=576000 api=f mb=8000 in=x
+t=proj fs=48000 ch=25 family=3 app=2049 fr=960 n=12 br=800000 api=16 mb=8000 in=x
+t=proj fs=48000 ch=25 family=3 app=2049 fr=960 n=12 br=800000 api=24 mb=8000 in=x
+t=proj fs=48000 ch=25 family=3 app=2049 fr=960 n=12 br=800000 api=f mb=8000 in=x
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=15 mb=8000 in=x vbr=0
+t=proj fs=48000 ch=9 family=3 app=2049 fr=960 n=15 mb=8000 in=x cx=5
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=15 mb=8000 in=x @5:reset=1 @7:br=64000
+t=proj fs=48000 ch=16 family=3 app=2049 fr=960 n=15 mb=8000 in=x br=-1000
+t=proj fs=48000 ch=9 family=3 app=2049 fr=960 n=15 mb=8000 in=x br=-1
+t=proj fs=24000 ch=4 family=3 app=2048 fr=480 n=20 br=64000 in=x
+t=proj fs=48000 ch=9 family=3 app=2049 fr=2880 n=8 br=256000 mb=8000 in=x
+t=proj fs=48000 ch=5 family=3 app=2049 fr=960 n=3 in=x
+t=proj fs=48000 ch=4 family=2 app=2049 fr=960 n=3 in=x
+t=proj fs=48000 ch=49 family=3 app=2049 fr=960 n=3 in=x
+t=enc fs=48000 ch=2 app=2049 fr=120 n=6 mb=1 in=x
+t=enc fs=48000 ch=1 app=2048 fr=3840 n=4 mb=1 in=x
+t=enc fs=48000 ch=1 app=2048 fr=1920 n=6 mb=1 in=x mode=1001
+t=enc fs=48000 ch=1 app=2049 fr=960 n=6 mb=1 in=x @3:mode=1002 @3:bw=1102
+t=enc fs=48000 ch=2 app=2049 fr=120 n=6 mb=2 in=x
+t=enc fs=48000 ch=1 app=2048 fr=3840 n=4 mb=2 in=x
+t=enc fs=48000 ch=1 app=2048 fr=1920 n=6 mb=2 in=x mode=1001
+t=enc fs=48000 ch=1 app=2049 fr=960 n=6 mb=2 in=x @3:mode=1002 @3:bw=1102
+t=enc fs=48000 ch=2 app=2049 fr=120 n=6 mb=3 in=x
+t=enc fs=48000 ch=1 app=2048 fr=3840 n=4 mb=3 in=x
+t=enc fs=48000 ch=1 app=2048 fr=1920 n=6 mb=3 in=x mode=1001
+t=enc fs=48000 ch=1 app=2049 fr=960 n=6 mb=3 in=x @3:mode=1002 @3:bw=1102
+t=enc fs=48000 ch=1 app=2048 fr=960 n=40 br=20000 @10:fd=5002 @20:fd=5004 @30:fd=5001
+t=enc fs=48000 ch=2 app=2048 fr=960 n=40 br=20000 @10:fd=5003 @20:fd=5002 @30:fd=5004
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 api=f3 in=s4
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 api=f3 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=20 api=f3 br=200000 mb=8000 in=s4
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=20 api=f3 br=128000 mb=8000 in=x
+t=enc fs=48000 ch=2 app=2049 fr=960 n=30 api=f4 in=s4
+t=enc fs=16000 ch=1 app=2048 fr=320 n=30 api=f4 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=20 api=f4 br=200000 mb=8000 in=s4
+t=proj fs=48000 ch=4 family=3 app=2049 fr=960 n=20 api=f4 br=128000 mb=8000 in=x
+t=enc fs=12000 ch=2 app=2049 fr=30 n=100 br=32000 in=x
+t=enc fs=12000 ch=2 app=2051 fr=30 n=100 br=64000 in=s5
+t=ms fs=48000 ch=3 streams=2 coupled=1 map=0.1.2 app=2049 fr=4800 n=6 br=96000 mb=8000 in=x
+t=ms fs=48000 ch=3 streams=2 coupled=1 map=0.1.2 app=2048 fr=4800 n=6 br=24000 vbr=0 mb=8000 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=960 n=4 mb=2 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=4800 n=4 mb=2 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=960 n=4 mb=3 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=4800 n=4 mb=3 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=960 n=4 mb=5 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=4800 n=4 mb=5 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=960 n=4 mb=9 in=x
+t=ms fs=48000 ch=3 streams=3 coupled=0 map=0.1.2 app=2049 fr=4800 n=4 mb=9 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=20 br=35000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=240 n=40 br=70000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=20 br=50000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=240 n=40 br=100000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=20 br=70000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2049 fr=240 n=40 br=140000 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2048 fr=960 n=30 br=30000 fec=1 loss=25 mb=8000 in=x
+t=sur fs=16000 ch=6 family=1 app=2048 fr=320 n=30 br=30000 fec=1 loss=10 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2048 fr=960 n=30 br=48000 fec=1 loss=25 mb=8000 in=x
+t=sur fs=16000 ch=6 family=1 app=2048 fr=320 n=30 br=48000 fec=1 loss=10 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2048 fr=960 n=30 br=64000 fec=1 loss=25 mb=8000 in=x
+t=sur fs=16000 ch=6 family=1 app=2048 fr=320 n=30 br=64000 fec=1 loss=10 mb=8000 in=x
+t=sur fs=48000 ch=6 family=1 app=2048 fr=960 n=60 br=96000 dtx=1 mb=8000 in=s3
+t=ms fs=48000 ch=4 streams=2 coupled=2 map=0.1.2.3 app=2049 fr=960 n=30 mb=4000 br=160000 setapp=2048 @3:cvbr=0 @6:maxbw=1103 @9:fc=1 @12:pi=1 @15:fc=-1000 @18:maxbw=1105 @20:setapp=2049 @21:br=300
+t=enc fs=48000 ch=1 app=2049 fr=960 n=10 br=300 in=x
+t=proj fs=48000 ch=36 family=3 app=2049 fr=960 n=4 br=1000000 mb=16000 in=x
+t=proj fs=48000 ch=38 family=3 app=2049 fr=960 n=4 br=1000000 mb=16000 in=x

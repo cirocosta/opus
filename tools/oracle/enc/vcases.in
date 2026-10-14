@@ -1,0 +1,84 @@
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1474 fec=1 loss=5 in=v01
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1474 in=v01
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v01
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v01+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v01
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v01+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v01
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1251 fec=1 loss=5 in=v02
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1251 in=v02
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v02
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v02+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v02
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v02+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v02
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1058 fec=1 loss=5 in=v03
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1058 in=v03
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v03
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v03+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v03
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v03+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v03
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1331 fec=1 loss=5 in=v04
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1331 in=v04
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v04
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v04+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v04
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v04+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v04
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1358 fec=1 loss=5 in=v05
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1358 in=v05
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v05
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v05+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v05
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v05+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v05
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1251 fec=1 loss=5 in=v06
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1251 in=v06
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v06
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v06+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v06
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v06+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v06
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1130 fec=1 loss=5 in=v07
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1130 in=v07
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v07
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v07+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v07
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v07+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v07
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1364 fec=1 loss=5 in=v08
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1364 in=v08
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v08
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v08+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v08
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v08+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v08
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1378 fec=1 loss=5 in=v09
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1378 in=v09
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v09
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v09+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v09
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v09+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v09
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1600 fec=1 loss=5 in=v10
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1600 in=v10
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v10
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v10+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v10
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v10+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v10
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1501 fec=1 loss=5 in=v11
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1501 in=v11
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v11
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v11+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v11
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v11+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v11
+t=enc fs=24000 ch=1 app=2048 fr=480 n=1332 fec=1 loss=5 in=v12
+t=enc fs=48000 ch=2 app=2049 fr=960 n=1332 in=v12
+t=enc fs=16000 ch=1 app=2048 fr=320 n=150 vbr=0 br=16000 dtx=1 in=v12
+t=enc fs=48000 ch=2 app=2049 fr=480 n=300 br=96000 cx=10 in=v12+20000
+t=enc fs=8000 ch=1 app=2052 fr=480 n=100 in=v12
+t=enc fs=12000 ch=2 app=2048 fr=720 n=100 fec=1 loss=20 api=f in=v12+50000
+t=sur fs=48000 ch=6 family=1 app=2049 fr=960 n=60 br=256000 mb=8000 in=v12

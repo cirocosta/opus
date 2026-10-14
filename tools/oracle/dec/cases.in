@@ -1,0 +1,77 @@
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt f
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 24
+dec testdata/dec_mix.bit -fs 48000 -ch 1 -fmt 16
+dec testdata/dec_mix.bit -fs 16000 -ch 2 -fmt 16 -loss 10 -seed 3
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -loss 15 -seed 7 -fec
+dec testdata/dec_mix.bit -fs 24000 -ch 1 -fmt f -loss 20 -seed 9 -fec
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -gain 1000
+dec testdata/dec_mix.bit -fs 12000 -ch 2 -fmt 24 -gain -2000 -loss 5
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -phinv -reset 300
+dec testdata/dec_mix.bit -fs 8000 -ch 1 -fmt 16 -loss 30
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -cx 5 -loss 15 -fec
+dec testdata/dec_mix.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 20 -seed 4
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -cx 7 -loss 10 -seed 2
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -ignext
+dec internal/silk/testdata/silk_mix.bit -fs 48000 -ch 2 -fmt 16
+dec internal/silk/testdata/silk_mix.bit -fs 16000 -ch 1 -fmt 16 -loss 15 -fec
+dec internal/silk/testdata/silk_mix.bit -fs 8000 -ch 2 -fmt 24 -loss 20 -fec -seed 5
+dec internal/silk/testdata/silk_mix.bit -fs 12000 -ch 1 -fmt f -loss 10
+dec internal/silk/testdata/silk_mix.bit -fs 16000 -ch 1 -fmt 16 -cx 5 -loss 15
+dec internal/silk/testdata/silk_mix.bit -fs 48000 -ch 2 -fmt f -cx 5 -loss 15 -fec -seed 8
+dec internal/silk/testdata/silk_mix.bit -fs 16000 -ch 1 -fmt 16 -cx 6
+dec internal/silk/testdata/silk_mix.bit -fs 48000 -ch 2 -fmt 16 -cx 7 -loss 10 -fec
+dec internal/silk/testdata/silk_mix.bit -fs 24000 -ch 2 -fmt 16 -cx 10 -gain 300 -loss 5 -fec
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 16 -loss 20 -plc 6 -seed 21
+dec testdata/dec_mix.bit -fs 16000 -ch 1 -fmt f -loss 20 -plc 3 -seed 22
+dec testdata/dec_mix.bit -fs 48000 -ch 2 -fmt 24 -loss 15 -plc 12 -fec -seed 23
+dec internal/silk/testdata/silk_mix.bit -fs 16000 -ch 2 -fmt 16 -loss 15 -plc 16 -fec -seed 24
+dec internal/silk/testdata/silk_mix.bit -fs 48000 -ch 1 -fmt 16 -loss 20 -plc 5 -seed 25
+dec internal/silk/testdata/silk_mix.bit -fs 24000 -ch 1 -fmt f -loss 15 -plc 7 -cx 5 -seed 26
+msdec testdata/ms51.pk -fmt 16
+msdec testdata/ms51.pk -fmt f -loss 10
+msdec testdata/ms51.pk -fmt 24 -gain 500 -fs 24000
+msdec testdata/ms4i.pk -fmt 16 -loss 15 -reset 20
+msdec testdata/ms3.pk -fmt f -fs 16000 -phinv
+msdec testdata/amb4.pk -fmt 16
+msdec testdata/proj4.pk -fmt 16
+msdec testdata/proj4.pk -fmt f -loss 10
+msdec testdata/proj4.pk -fmt 24 -fs 12000
+msdec testdata/proj9.pk -fmt 16 -cx 5 -loss 10
+msdec testdata/proj9.pk -fmt f
+dec $V/testvector01.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 01
+dec $V/testvector01.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 01
+dec $V/testvector01.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 01
+dec $V/testvector02.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 02
+dec $V/testvector02.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 02
+dec $V/testvector02.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 02
+dec $V/testvector03.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 03
+dec $V/testvector03.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 03
+dec $V/testvector03.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 03
+dec $V/testvector04.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 04
+dec $V/testvector04.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 04
+dec $V/testvector04.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 04
+dec $V/testvector05.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 05
+dec $V/testvector05.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 05
+dec $V/testvector05.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 05
+dec $V/testvector06.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 06
+dec $V/testvector06.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 06
+dec $V/testvector06.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 06
+dec $V/testvector07.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 07
+dec $V/testvector07.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 07
+dec $V/testvector07.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 07
+dec $V/testvector08.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 08
+dec $V/testvector08.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 08
+dec $V/testvector08.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 08
+dec $V/testvector09.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 09
+dec $V/testvector09.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 09
+dec $V/testvector09.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 09
+dec $V/testvector10.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 10
+dec $V/testvector10.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 10
+dec $V/testvector10.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 10
+dec $V/testvector11.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 11
+dec $V/testvector11.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 11
+dec $V/testvector11.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 11
+dec $V/testvector12.bit -fs 48000 -ch 2 -fmt 16 -loss 10 -fec -seed 12
+dec $V/testvector12.bit -fs 16000 -ch 1 -fmt f -cx 5 -loss 10 -seed 12
+dec $V/testvector12.bit -fs 24000 -ch 2 -fmt 24 -gain -500 -cx 7 -loss 5 -seed 12
